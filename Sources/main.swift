@@ -52,6 +52,7 @@ if let i = args.firstIndex(of: "--snapshot"), args.count > i + 2 {
     case "settings": Snapshot.settings(to: args[i + 2])
     case "panel-pick": Snapshot.panel(to: args[i + 2], picking: true, trusted: true)
     case "panel-locked": Snapshot.panel(to: args[i + 2], picking: false, trusted: false)
+    case "panel-home": Snapshot.panel(to: args[i + 2], picking: false, trusted: true, home: true)
     default: Snapshot.panel(to: args[i + 2], picking: false, trusted: true)
     }
     exit(0)

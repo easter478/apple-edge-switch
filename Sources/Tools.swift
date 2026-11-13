@@ -69,7 +69,7 @@ enum Snapshot {
         try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
     }
 
-    static func panel(to path: String, picking: Bool, trusted: Bool) {
+    static func panel(to path: String, picking: Bool, trusted: Bool, home: Bool = false) {
         let t = Theme.current
         AppModel.shared.start()
         RunLoop.current.run(until: Date().addingTimeInterval(0.7))   // let the window list load
@@ -77,8 +77,13 @@ enum Snapshot {
         let list = ListView()
         list.theme = t
         list.forceTrusted = trusted
+        if home {
+            list.mode = .home
+            HomeAssistant.shared.refresh()
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
+        }
         list.reload()
-        let w = Prefs.shared.list == "icons" ? Theme.widthIcons : Theme.widthNames
+        let w = Prefs.shared.list == "icons" && !home ? Theme.widthIcons : Theme.widthNames
         let h = t.fullHeight ? 640 : list.preferredHeight()
         let back = Backdrop(frame: NSRect(x: 0, y: 0, width: w + 32, height: h + 32))
         back.theme = t; back.radius = t.radius
@@ -91,10 +96,12 @@ enum Snapshot {
         let t = Theme.current
         let v = SettingsView()
         v.theme = t
+        v.loadFields()
         let h = v.contentHeight()
         let back = Backdrop(frame: NSRect(x: 0, y: 0, width: SettingsWindow.width + 32, height: h + 32))
         back.theme = t; back.radius = t.sheetRadius
         v.frame = NSRect(x: 16, y: 16, width: SettingsWindow.width, height: h)
+        v.positionFields()
         back.addSubview(v)
         write(back, to: path)
     }
@@ -159,6 +166,17 @@ enum CLI {
         case "hide":
             guard a.count > 1, let app = find(a[1]) else { print("app not found"); return 1 }
             app.hide(); wait(0.3)
+        case "ha":     // list lights and switches, or toggle one: ha [entity_id]
+            HomeAssistant.shared.refresh(); wait(1.5)
+            print("status=\(HomeAssistant.shared.status)")
+            if a.count > 1, let e = HomeAssistant.shared.entities.first(where: { $0.id == a[1] }) {
+                HomeAssistant.shared.toggle(e); wait(2.0)
+            }
+            for e in HomeAssistant.shared.entities { print("  \(e.id) \(e.name): \(e.state)") }
+        case "shot":   // full-screen screenshot through the same code as the button
+            print("folder=\(Screenshots.folder().path)")
+            Screenshots.take(selection: false); wait(2.0)
+            print("clipboard has image=\(NSPasteboard.general.canReadObject(forClasses: [NSImage.self], options: nil))")
         case "tweaks":
             SystemTweaks.apply()
             wait(2)

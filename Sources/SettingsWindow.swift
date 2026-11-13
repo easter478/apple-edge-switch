@@ -8,13 +8,18 @@ final class SheetWindow: NSWindow {
     override var canBecomeMain: Bool { true }
     override func cancelOperation(_ sender: Any?) { SettingsWindow.shared.hide() }
     override func keyDown(with e: NSEvent) {
-        if e.keyCode == 53 || e.keyCode == 36 { SettingsWindow.shared.hide() } else { super.keyDown(with: e) }
+        if e.keyCode == 53 { SettingsWindow.shared.hide() } else { super.keyDown(with: e) }
     }
     override func performKeyEquivalent(with e: NSEvent) -> Bool {
         guard e.modifierFlags.contains(.command) else { return super.performKeyEquivalent(with: e) }
+        // There is no Edit menu (the app has no menu bar), so the text fields get their shortcuts here.
         switch e.charactersIgnoringModifiers {
         case "w": SettingsWindow.shared.hide(); return true
         case "q": NSApp.terminate(nil); return true
+        case "v": return NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: self)
+        case "c": return NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: self)
+        case "x": return NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: self)
+        case "a": return NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: self)
         default: return super.performKeyEquivalent(with: e)
         }
     }
@@ -51,6 +56,7 @@ final class SettingsWindow {
         window.contentView = root
         NotificationCenter.default.addObserver(self, selector: #selector(refresh), name: .prefsChanged, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(refresh), name: .modelChanged, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(refresh), name: .homeChanged, object: nil)
     }
 
     var isVisible: Bool { window.isVisible }
@@ -67,6 +73,7 @@ final class SettingsWindow {
         scroll.appearance = t.appearance
         let h = view.contentHeight()
         view.frame = NSRect(x: 0, y: 0, width: SettingsWindow.width, height: h)
+        view.positionFields()
         view.needsDisplay = true
         let s = NSScreen.main ?? NSScreen.screens[0]
         let wh = min(h, s.visibleFrame.height - 60)
@@ -79,6 +86,8 @@ final class SettingsWindow {
     }
 
     func show() {
+        view.loadFields()
+        if HomeAssistant.shared.isSetUp { HomeAssistant.shared.refresh() }
         apply()
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
@@ -94,7 +103,68 @@ final class SettingsWindow {
 final class SettingsView: NSView {
     enum Act: Equatable {
         case done, mode(String), theme(String), look(String), accent(String), list(String), toggle(String), access, quit
+        case unpin(String), homeSave
     }
+
+    private let addressField = NSTextField()
+    private let tokenField = NSSecureTextField()
+    private var fieldRects: [String: NSRect] = [:]
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        for f in [addressField, tokenField] {
+            f.isBordered = false
+            f.drawsBackground = false
+            f.focusRingType = .none
+            f.font = .systemFont(ofSize: 13)
+            f.cell?.usesSingleLineMode = true
+            f.cell?.lineBreakMode = .byTruncatingTail
+            f.target = self
+            f.action = #selector(saveHome)
+            addSubview(f)
+        }
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    /// Fills the address from the saved settings. The token field always starts empty: a saved token is never shown.
+    func loadFields() {
+        addressField.stringValue = Prefs.shared.haURL
+        tokenField.stringValue = ""
+    }
+
+    /// Puts the two text fields where the last layout pass drew their boxes.
+    func positionFields() {
+        _ = walk(draw: false)
+        let t = theme
+        for (key, f) in [("address", addressField), ("token", tokenField)] {
+            guard let r = fieldRects[key] else { continue }
+            f.frame = NSRect(x: r.minX + 10, y: r.midY - 9, width: r.width - 20, height: 18)
+            f.textColor = t.text
+            f.appearance = t.appearance
+            let hint = key == "address" ? "http://homeassistant.local:8123"
+                : (Secrets.hasToken ? "Saved in your Keychain. Paste to replace." : "Paste a long-lived access token")
+            f.placeholderAttributedString = NSAttributedString(string: hint, attributes: [.foregroundColor: t.textMuted, .font: NSFont.systemFont(ofSize: 13)])
+        }
+    }
+
+    @objc private func saveHome() {
+        var address = addressField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        while address.hasSuffix("/") { address.removeLast() }
+        if !address.isEmpty, !address.lowercased().hasPrefix("http://"), !address.lowercased().hasPrefix("https://") { address = "http://" + address }
+        addressField.stringValue = address
+        let token = tokenField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !token.isEmpty {
+            saveFailed = !Secrets.saveToken(token)
+            tokenField.stringValue = ""
+        }
+        Prefs.shared.haURL = address
+        HomeAssistant.shared.credentialsChanged()
+        HomeAssistant.shared.refresh()
+        window?.makeFirstResponder(self)
+        positionFields()
+        needsDisplay = true
+    }
+    private var saveFailed = false
 
     var theme = Theme.current
     private var hover: Act?
@@ -138,6 +208,8 @@ final class SettingsView: NSView {
         case "hideMenuBar": return p.hideMenuBar
         case "stageManagerOff": return p.stageManagerOff
         case "login": return loginOn
+        case "showHome": return p.showHome
+        case "showShots": return p.showShots
         default: return false
         }
     }
@@ -154,6 +226,10 @@ final class SettingsView: NSView {
         case .toggle("hideDock"): p.hideDock.toggle()
         case .toggle("hideMenuBar"): p.hideMenuBar.toggle()
         case .toggle("stageManagerOff"): p.stageManagerOff.toggle()
+        case .toggle("showHome"): p.showHome.toggle()
+        case .toggle("showShots"): p.showShots.toggle()
+        case .unpin(let id): p.pinned = p.pinned.filter { $0.id != id }
+        case .homeSave: saveHome()
         case .toggle("login"):
             do {
                 if loginOn { try SMAppService.mainApp.unregister() } else { try SMAppService.mainApp.register() }
@@ -268,8 +344,9 @@ final class SettingsView: NSView {
         // look
         section("Look")
         let cw = (w - 20) / 3
-        for (i, k) in ThemeKind.allCases.enumerated() {
-            let r = NSRect(x: m + CGFloat(i) * (cw + 10), y: y, width: cw, height: 116)
+        let kinds = ThemeKind.allCases
+        for (i, k) in kinds.enumerated() {
+            let r = NSRect(x: m + CGFloat(i % 3) * (cw + 10), y: y + CGFloat(i / 3) * 124, width: cw, height: 116)
             let on = p.theme == k.rawValue
             hot(r, .theme(k.rawValue))
             card(r, selected: on, act: .theme(k.rawValue))
@@ -282,6 +359,9 @@ final class SettingsView: NSView {
                 case .tahoe: colors = [NSColor(hex: "#3B7BD9"), NSColor(hex: "#0B1E4A")]
                 case .slate: colors = [NSColor(hex: "#56606E"), NSColor(hex: "#14181D")]
                 case .aurora: colors = [NSColor(hex: "#7C3AED"), NSColor(hex: "#12C9A0"), NSColor(hex: "#E0458C")]
+                case .midnight: colors = [NSColor(hex: "#24408F"), NSColor(hex: "#060B1F")]
+                case .vision: colors = [NSColor(hex: "#D5DDEC"), NSColor(hex: "#8794B0")]
+                case .neon: colors = [NSColor(hex: "#161A22"), NSColor(hex: "#05070A")]
                 }
                 NSGradient(colors: colors)?.draw(in: pv, angle: -40)
                 let glassFill = NSColor.white.withAlphaComponent(k == .slate ? 0.34 : 0.55)
@@ -289,13 +369,18 @@ final class SettingsView: NSView {
                 case .tahoe: fill(NSRect(x: pv.minX + 4, y: pv.minY + 4, width: pv.width * 0.26, height: pv.height - 8), 6, glassFill)
                 case .slate: fill(NSRect(x: pv.minX, y: pv.minY, width: pv.width * 0.26, height: pv.height), 0, glassFill)
                 case .aurora: fill(NSRect(x: pv.minX + 5, y: pv.minY + 12, width: pv.width * 0.24, height: pv.height - 24), 9, glassFill)
+                case .midnight: fill(NSRect(x: pv.minX + 4, y: pv.minY + 4, width: pv.width * 0.26, height: pv.height - 8), 8, NSColor(hex: "#9DB6FF", alpha: 0.45))
+                case .vision: fill(NSRect(x: pv.minX + 6, y: pv.minY + 10, width: pv.width * 0.25, height: pv.height - 20), 11, NSColor.white.withAlphaComponent(0.8))
+                case .neon:
+                    let pr = NSRect(x: pv.minX + 4, y: pv.minY + 4, width: pv.width * 0.26, height: pv.height - 8)
+                    fill(pr, 5, NSColor.white.withAlphaComponent(0.10)); stroke(pr, 5, t.accent, 1.5)
                 }
                 NSGraphicsContext.restoreGraphicsState()
                 text(k.title, size: 13.5, weight: .semibold, color: t.text, in: NSRect(x: r.minX + 10, y: r.minY + 72, width: cw - 20, height: 17))
                 text(k.blurb, size: 12.5, color: t.textMuted, in: NSRect(x: r.minX + 10, y: r.minY + 91, width: cw - 20, height: 16))
             }
         }
-        y += 116 + 8
+        y += CGFloat((kinds.count + 2) / 3) * 124
 
         var r = line("Appearance", height: 48)
         segmented([("dark", "Dark"), ("light", "Light")], current: p.look, rightEdge: r.maxX - 8, midY: r.midY) { .look($0) }
@@ -326,22 +411,70 @@ final class SettingsView: NSView {
             ("login", "Start at login", loginError ? "macOS did not allow this. Add Edge Switch under Login Items in System Settings."
                                                    : "Edge Switch opens when you sign in to this Mac."),
         ]
-        for (key, title, detail) in toggles {
+        func toggleLine(_ key: String, _ title: String, _ detail: String) {
             let lr = line(title, detail, height: 56)
             let sw = NSRect(x: lr.maxX - 14 - 46, y: lr.midY - 14, width: 46, height: 28)
             hot(lr, .toggle(key))
-            if draw {
-                let on = isOn(key)
-                fill(sw, 14, on ? t.accent : t.hover)
-                if !on { stroke(sw, 14, t.hair) }
-                let knob = NSRect(x: on ? sw.maxX - 25 : sw.minX + 3, y: sw.minY + 3, width: 22, height: 22)
-                NSGraphicsContext.saveGraphicsState()
-                let sh = NSShadow(); sh.shadowColor = NSColor.black.withAlphaComponent(0.35); sh.shadowBlurRadius = 3; sh.shadowOffset = NSSize(width: 0, height: -1); sh.set()
-                fill(knob, 11, .white)
-                NSGraphicsContext.restoreGraphicsState()
+            guard draw else { return }
+            let on = isOn(key)
+            fill(sw, 14, on ? t.accent : t.hover)
+            if !on { stroke(sw, 14, t.hair) }
+            let knob = NSRect(x: on ? sw.maxX - 25 : sw.minX + 3, y: sw.minY + 3, width: 22, height: 22)
+            NSGraphicsContext.saveGraphicsState()
+            let sh = NSShadow(); sh.shadowColor = NSColor.black.withAlphaComponent(0.35); sh.shadowBlurRadius = 3; sh.shadowOffset = NSSize(width: 0, height: -1); sh.set()
+            fill(knob, 11, .white)
+            NSGraphicsContext.restoreGraphicsState()
+        }
+        for (key, title, detail) in toggles { toggleLine(key, title, detail) }
+        y -= 8
+
+        // buttons beside Settings in the list
+        section("Buttons beside Settings")
+        toggleLine("showHome", "Home Assistant button", "Opens your lights and switches inside the list.")
+        toggleLine("showShots", "Screenshot buttons", "Whole screen, or an area you drag. Saved and copied.")
+        y -= 8
+
+        // pinned apps
+        section("Pinned apps")
+        let pins = p.pinned
+        if pins.isEmpty {
+            _ = line("None yet", "Point at an app in the list and click the pin. Up to \(Prefs.maxPinned) apps.", height: 56)
+        } else {
+            for pin in pins {
+                let lr = line(pin.name, height: 48)
+                pill(NSRect(x: lr.maxX - 14 - 84, y: lr.midY - 15, width: 84, height: 30), "Remove", act: .unpin(pin.id))
             }
         }
         y -= 8
+
+        // Home Assistant
+        section("Home Assistant")
+        for (key, title) in [("address", "Address"), ("token", "Access token")] {
+            let lr = line(title, height: 48)
+            let fr = NSRect(x: lr.minX + 128, y: lr.midY - 15, width: lr.width - 128 - 10, height: 30)
+            fieldRects[key] = fr
+            if draw { fill(fr, min(rr, 10), t.field); stroke(fr, min(rr, 10), t.hair) }
+        }
+        var haTitle = "Not connected", haDetail = "Make a long-lived access token in Home Assistant: your profile, then Security."
+        if saveFailed { haDetail = "The token could not be saved in your Keychain." }
+        else {
+            switch HomeAssistant.shared.status {
+            case .ok: haTitle = "Connected"; haDetail = "\(HomeAssistant.shared.entities.count) lights and switches found. The token is kept in your Keychain."
+            case .loading: haTitle = "Checking"; haDetail = "Asking Home Assistant for your lights and switches."
+            case .failed(let msg): haDetail = msg
+            case .notSetUp: break
+            }
+        }
+        let hr = NSRect(x: m, y: y, width: w, height: 72)
+        card(hr, selected: false, act: nil)
+        if draw {
+            text(haTitle, size: 14, color: t.text, in: NSRect(x: hr.minX + 14, y: hr.minY + 10, width: w - 170, height: 18))
+            let ps = NSMutableParagraphStyle(); ps.lineBreakMode = .byWordWrapping
+            (haDetail as NSString).draw(with: NSRect(x: hr.minX + 14, y: hr.minY + 30, width: w - 170, height: 34), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
+                                        attributes: [.font: NSFont.systemFont(ofSize: 12.5), .foregroundColor: t.textMuted, .paragraphStyle: ps])
+        }
+        pill(NSRect(x: hr.maxX - 14 - 126, y: hr.midY - 16, width: 126, height: 32), "Save and test", act: .homeSave)
+        y += 72
 
         // window control + quit
         section("Window control")

@@ -1,6 +1,6 @@
 # Edge Switch theme
 
-Chosen by the user on 2026-11-12: **Tahoe Glass**. It is the default. Slate Rail and Aurora Capsule stay available in Settings; their tokens are in `mockups/edge-switch.html`.
+Chosen by the user on 2026-11-12: **Tahoe Glass**. It is the default. Five more looks are available in Settings: Slate Rail, Aurora Capsule, and (added 2026-11-13 at the user's request) Midnight Glass, Vision Air and Neon Edge. Their tokens are in `Sources/Theme.swift` (`Theme.make`).
 
 ## Design philosophy
 
@@ -47,6 +47,9 @@ Shape and size:
 | Settings sheet radius | 24 pt |
 | Gap between rows | 3 pt |
 | Window row (one window listed under its app) | 30 pt high, indented 46 pt, 12.5 pt text |
+| Pinned apps row | 50 pt high, 36 pt icons, above Settings |
+| Home Assistant row | 40 pt high, 40 x 24 pt switch |
+| Tool buttons beside Settings | 34 x 32 pt |
 | Close and minimize buttons on a row | 28 pt square, 8 pt radius, close on the left |
 
 Motion: the list slides in over 210 ms (ease out) and leaves in 140 ms (ease in). Switching apps is instant. With Reduce Motion on, nothing animates.

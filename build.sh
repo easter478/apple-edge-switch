@@ -9,7 +9,7 @@ set -e
 cd "${0:A:h}"
 NAME="Edge Switch"
 ID="local.easter.edgeswitch"
-VERSION="1.2.0"
+VERSION="1.3.0"
 OUT="build"
 APP="$OUT/$NAME.app"
 DEST="$HOME/Applications/$NAME.app"
@@ -45,6 +45,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>NSLocalNetworkUsageDescription</key><string>Edge Switch talks to your Home Assistant to show and switch your lights.</string>
+  <key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><true/></dict>
 </dict></plist>
 PLIST
 codesign --force -s - --identifier "$ID" "$APP"

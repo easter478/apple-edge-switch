@@ -6,6 +6,7 @@ struct AppEntry {
     let icon: NSImage
     let hidden: Bool
     let bundleID: String?
+    var url: URL? = nil
 }
 
 /// One side of a 50/50 split: an app, and optionally one particular window of it.
@@ -85,7 +86,7 @@ final class AppModel {
             .sorted { ($0.launchDate ?? .distantPast, $0.processIdentifier) < ($1.launchDate ?? .distantPast, $1.processIdentifier) }
         apps = list.map {
             AppEntry(pid: $0.processIdentifier, name: $0.localizedName ?? "App",
-                     icon: $0.icon ?? NSWorkspace.shared.icon(for: .application), hidden: $0.isHidden, bundleID: $0.bundleIdentifier)
+                     icon: $0.icon ?? NSWorkspace.shared.icon(for: .application), hidden: $0.isHidden, bundleID: $0.bundleIdentifier, url: $0.bundleURL)
         }
         changed()
     }
@@ -356,6 +357,38 @@ final class AppModel {
         running(pid)?.hide()
         if current == pid { current = mru.first { $0 != pid && !(running($0)?.isHidden ?? true) } }
         refresh()
+    }
+
+    // MARK: pinned apps
+
+    func canPin(_ e: AppEntry) -> Bool { e.bundleID != nil && e.url != nil }
+    func isPinned(_ e: AppEntry) -> Bool { Prefs.shared.pinned.contains { $0.id == e.bundleID } }
+
+    /// Pins or unpins a running app. Returns false when the pinned row is full.
+    @discardableResult
+    func togglePin(_ e: AppEntry) -> Bool {
+        guard let id = e.bundleID, let url = e.url else { return false }
+        var list = Prefs.shared.pinned
+        if let i = list.firstIndex(where: { $0.id == id }) {
+            list.remove(at: i)
+        } else {
+            guard list.count < Prefs.maxPinned else { return false }
+            list.append(PinnedApp(id: id, path: url.path, name: e.name))
+        }
+        Prefs.shared.pinned = list
+        return true
+    }
+
+    func unpin(_ p: PinnedApp) { Prefs.shared.pinned = Prefs.shared.pinned.filter { $0 != p } }
+
+    func pid(of p: PinnedApp) -> pid_t? { apps.first { $0.bundleID == p.id }?.pid }
+
+    /// A click on a pinned icon: switch to the app, or start it when it is not running.
+    func open(_ p: PinnedApp) {
+        if let pid = pid(of: p) { show(pid); return }
+        let c = NSWorkspace.OpenConfiguration()
+        c.activates = true
+        NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: p.path), configuration: c, completionHandler: nil)
     }
 
     /// Quits an app, as Cmd-Q would. The app itself asks about unsaved work.

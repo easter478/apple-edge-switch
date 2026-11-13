@@ -4,7 +4,7 @@
 
 A macOS app switcher for a user coming from Windows who finds Stage Manager and the Dock in the way. Every app fills the screen with no extra click. Moving the cursor to the left screen edge slides out a list of open apps; a click jumps to one, a right-click puts two apps side by side 50/50. The Dock and menu bar stay hidden.
 
-Status on 2026-11-12: **built and installed.** The app is `~/Applications/Edge Switch.app` (bundle id `local.easter.edgeswitch`, version 1.2.0). It has no Dock icon and no menu bar icon; its settings open from the gear at the bottom of the list, or by opening the app again while it runs.
+Status on 2026-11-12: **built and installed.** The app is `~/Applications/Edge Switch.app` (bundle id `local.easter.edgeswitch`, version 1.3.0). It has no Dock icon and no menu bar icon; its settings open from the gear at the bottom of the list, or by opening the app again while it runs.
 
 Target machine: Mac mini (Apple silicon), macOS 27.2, one 2560 x 1440 display at 144 Hz.
 
@@ -40,7 +40,7 @@ Checks from Terminal (the binary run this way borrows the terminal's own Accessi
 "$HOME/Applications/Edge Switch.app/Contents/MacOS/EdgeSwitch" --cli status
 ```
 
-Other `--cli` commands: `fill <app>`, `split <left app> <right app>`, `tweaks`, `warp <x> <y>`, `click <x> <y>`, `rightclick <x> <y>`, `own`.
+Other `--cli` commands: `fill <app>`, `split <left app> <right app>`, `tweaks`, `warp <x> <y>`, `click <x> <y>`, `rightclick <x> <y>`, `own`, `closewin <app> <title>`, `hide <app>`, `ha [entity_id]`, `shot`. For `ha` without touching the Keychain, set `EDGESWITCH_HA_URL` and `EDGESWITCH_HA_TOKEN` to a test server.
 
 Render the list or the settings sheet to a picture without touching the screen (theme, appearance, list style and accent are optional):
 
@@ -48,7 +48,7 @@ Render the list or the settings sheet to a picture without touching the screen (
 "$HOME/Applications/Edge Switch.app/Contents/MacOS/EdgeSwitch" --snapshot panel /tmp/panel.png tahoe dark names
 ```
 
-Snapshot kinds: `panel`, `panel-pick`, `panel-locked`, `settings`.
+Snapshot kinds: `panel`, `panel-pick`, `panel-locked`, `panel-home`, `settings`.
 
 Open the mockup in Chrome:
 
@@ -68,6 +68,8 @@ Files in `Sources/`:
 - `Panel.swift`: `PanelController` opens the list when the cursor reaches the left 1 pt of a screen and closes it when the cursor moves 56 pt past it. `ListView` draws the rows itself and handles clicks by position.
 - `SettingsWindow.swift`: the settings sheet, drawn by one `walk(draw:)` pass that both lays out and paints.
 - `SystemTweaks.swift`: Dock auto-hide (`com.apple.dock autohide`, then the Dock is restarted), menu bar auto-hide (`_HIHideMenuBar` and `AppleMenuBarVisibleInFullscreen` in the global domain, then the `AppleInterfaceMenuBarHidingChangedNotification` distributed notification), Stage Manager (`com.apple.WindowManager GloballyEnabled`).
+- `HomeAssistant.swift`: the Keychain helper (`Secrets`) and the Home Assistant client.
+- `Screenshots.swift`: whole-screen and drag-an-area screenshots.
 - `Tools.swift`: icon drawing, snapshots and the `--cli` checks. Not used in normal running.
 
 Rules the code follows:
@@ -96,6 +98,19 @@ Rules the code follows:
 - Nothing goes to GitHub unless the user says so at that moment.
 
 ## Change log
+
+### 2026-11-13, build 1.3.0
+
+- Pinned apps: point at an app row and click the pin (left of close and minimize); up to 5. They sit in a row above Settings and stay there when the app is closed. Click opens or switches to the app; the small x on a pinned icon removes it; a dot shows it is running. Stored in the `pinned` preference (bundle id, path, name). Settings has a "Pinned apps" section with Remove buttons.
+- Home Assistant: an "HA" button beside Settings turns the list into a Home Assistant view with every light and switch, an on/off toggle each, and type-to-search (the panel takes the keyboard only in this view; Esc clears the search, then goes back to the apps). `HomeAssistant.swift` uses the REST API: `GET /api/states`, `POST /api/services/<domain>/toggle`; refresh every 10 s while the view is open. The address is the `haURL` preference; the access token is in the macOS Keychain (`Secrets`, service `local.easter.edgeswitch`, account `home-assistant-token`) and is never written to preferences, files or logs. Settings has address and token fields and "Save and test".
+- Screenshots: two buttons beside Settings, whole screen and drag-an-area, through `/usr/sbin/screencapture` (`Screenshots.swift`). Saved to `~/Pictures/Screenshots` (or the folder macOS is set to use) and copied to the clipboard. The Desktop is avoided because macOS asks a separate permission to write there.
+- Settings: "Buttons beside Settings" switches to show or hide the Home Assistant button and the screenshot buttons (`showHome`, `showShots`).
+- Three more looks: Midnight Glass, Vision Air, Neon Edge (six in total, each dark and light).
+- Readability: the second line on the highlighted row now uses the full text colour (theme-check finding).
+- `Info.plist` gained `NSAllowsArbitraryLoads` (Home Assistant is usually plain http on the home network) and a local-network usage text.
+- Tested: Home Assistant code against a stand-in server on this Mac (`--cli ha`): listing, toggling a light (the server logged the change), a wrong token, an unreachable address and no setup each gave the right message; the Home Assistant view, new looks, tool buttons and Settings were rendered with `--snapshot` and checked by eye; the full-screen screenshot code saved a 2560 x 1440 picture and put it on the clipboard.
+- Not tested: clicking any of the new buttons in the running app (the user was using the mouse, so scripted pointer tests were stopped); pinning and the pinned row (no picture, no click test); the drag-an-area screenshot; a real Home Assistant; typing in the search; the Keychain save from Settings; the text fields in Settings.
+- Each rebuild still resets Accessibility (the user declined a signing certificate). The installed copy will also ask once each for Screen Recording (screenshots), local network and Keychain access (Home Assistant).
 
 ### 2026-11-13, build 1.2.0
 
@@ -134,7 +149,7 @@ Rules the code follows:
 
 - The installed copy needs the user to switch on Accessibility for Edge Switch once. Until then it switches apps but cannot resize them.
 - GitHub push is waiting for the user to sign in (`~/.local/bin/gh auth login`). Then: create a private repo, wait 5 minutes, push.
-- Asked for on 2026-11-13, not built: pinned apps at the bottom of the list, a Home Assistant button beside Settings that opens light/switch controls in the list, more look options.
+- The pinned row, Home Assistant view and screenshot buttons have not been clicked through in the running app yet; the user is testing them.
 - The mockup (`mockups/edge-switch.html`) does not show window rows or the close buttons.
 - The permission resets on every rebuild (ad hoc signing). A stable self-signed certificate would fix that; not set up.
 - No VoiceOver labels and no keyboard control of the list or the settings sheet (custom-drawn views). Esc, Return and Cmd-W close Settings.

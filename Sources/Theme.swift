@@ -4,12 +4,15 @@ import AppKit
 // Source of truth for the values: THEME.md (Tahoe Glass) and mockups/edge-switch.html.
 
 enum ThemeKind: String, CaseIterable {
-    case tahoe, slate, aurora
+    case tahoe, slate, aurora, midnight, vision, neon
     var title: String {
         switch self {
         case .tahoe: return "Tahoe Glass"
         case .slate: return "Slate Rail"
         case .aurora: return "Aurora Capsule"
+        case .midnight: return "Midnight Glass"
+        case .vision: return "Vision Air"
+        case .neon: return "Neon Edge"
         }
     }
     var blurb: String {
@@ -17,6 +20,9 @@ enum ThemeKind: String, CaseIterable {
         case .tahoe: return "Floating frosted panel"
         case .slate: return "Flat rail on the edge"
         case .aurora: return "Small glowing capsule"
+        case .midnight: return "Deep blue frosted panel"
+        case .vision: return "Bright, airy capsule"
+        case .neon: return "Dark, accent outline"
         }
     }
 }
@@ -89,6 +95,9 @@ struct Theme {
     static let buttonSize: CGFloat = 28        // close and minimize buttons on a row
     static let icon: CGFloat = 36
     static let footer: CGFloat = 44
+    static let pinnedRow: CGFloat = 50         // the row of pinned apps above Settings
+    static let homeRow: CGFloat = 40           // one light or switch in the Home Assistant view
+    static let homeHeight: CGFloat = 620       // height of the Home Assistant view in the capsule looks
     static let slideIn: TimeInterval = 0.21
     static let slideOut: TimeInterval = 0.14
 
@@ -129,6 +138,33 @@ struct Theme {
                          rowOn: dark ? .rgba(255, 255, 255, 0.10) : .rgba(0, 0, 0, 0.08), rowOnEnd: nil, showsBar: true,
                          shadow: dark ? .rgba(0, 0, 0, 0.35) : .rgba(30, 40, 60, 0.20),
                          inset: 0, radius: 0, rowRadius: 6, sheetRadius: 10, fullHeight: true, edgeAttached: true)
+        case .midnight:
+            return Theme(kind: kind, look: look, accent: accent, text: text, textMuted: muted,
+                         tint: dark ? .rgba(10, 18, 44, 0.58) : .rgba(230, 237, 252, 0.56),
+                         rim: dark ? .rgba(140, 170, 255, 0.30) : .rgba(255, 255, 255, 0.80),
+                         sheen: dark ? .rgba(120, 160, 255, 0.16) : .rgba(255, 255, 255, 0.50),
+                         hair: hair, field: field, hover: hover,
+                         rowOn: accent.withAlphaComponent(dark ? 0.40 : 0.28), rowOnEnd: nil, showsBar: false,
+                         shadow: dark ? .rgba(0, 0, 0, 0.42) : .rgba(20, 30, 60, 0.26),
+                         inset: 10, radius: 26, rowRadius: 16, sheetRadius: 28, fullHeight: true, edgeAttached: false)
+        case .vision:
+            return Theme(kind: kind, look: look, accent: accent, text: text, textMuted: muted,
+                         tint: dark ? .rgba(58, 60, 68, 0.40) : .rgba(255, 255, 255, 0.42),
+                         rim: dark ? .rgba(255, 255, 255, 0.34) : .rgba(255, 255, 255, 0.90),
+                         sheen: dark ? .rgba(255, 255, 255, 0.20) : .rgba(255, 255, 255, 0.60),
+                         hair: hair, field: field, hover: hover,
+                         rowOn: accent.withAlphaComponent(dark ? 0.36 : 0.24), rowOnEnd: nil, showsBar: false,
+                         shadow: dark ? .rgba(0, 0, 0, 0.36) : .rgba(20, 30, 60, 0.22),
+                         inset: 16, radius: 34, rowRadius: 24, sheetRadius: 34, fullHeight: false, edgeAttached: false)
+        case .neon:
+            return Theme(kind: kind, look: look, accent: accent, text: text, textMuted: muted,
+                         tint: dark ? .rgba(8, 10, 14, 0.66) : .rgba(244, 246, 250, 0.66),
+                         rim: accent.withAlphaComponent(dark ? 0.60 : 0.50),
+                         sheen: accent.withAlphaComponent(dark ? 0.14 : 0.10),
+                         hair: hair, field: field, hover: hover,
+                         rowOn: accent.withAlphaComponent(dark ? 0.22 : 0.16), rowOnEnd: nil, showsBar: true,
+                         shadow: dark ? .rgba(0, 0, 0, 0.42) : .rgba(20, 30, 60, 0.26),
+                         inset: 8, radius: 16, rowRadius: 8, sheetRadius: 16, fullHeight: true, edgeAttached: false)
         case .aurora:
             let mint = NSColor.rgba(47, 227, 196, 1)
             let end = (accent.blended(withFraction: 0.6, of: mint) ?? accent).withAlphaComponent(dark ? 0.34 : 0.24)

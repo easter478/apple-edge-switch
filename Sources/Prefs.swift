@@ -1,8 +1,21 @@
 import AppKit
 
 extension Notification.Name {
+    static let homeChanged = Notification.Name("EdgeSwitchHomeChanged")
     static let prefsChanged = Notification.Name("EdgeSwitchPrefsChanged")
     static let modelChanged = Notification.Name("EdgeSwitchModelChanged")
+}
+
+struct PinnedApp: Equatable {
+    let id: String      // bundle id
+    let path: String    // where the app is
+    let name: String
+    init(id: String, path: String, name: String) { self.id = id; self.path = path; self.name = name }
+    init?(_ d: [String: String]) {
+        guard let id = d["id"], let path = d["path"], let name = d["name"] else { return nil }
+        self.init(id: id, path: path, name: name)
+    }
+    var dictionary: [String: String] { ["id": id, "path": path, "name": name] }
 }
 
 // Settings, saved in the app's own preferences (domain local.easter.edgeswitch).
@@ -14,6 +27,7 @@ final class Prefs {
         d.register(defaults: [
             "mode": "row", "theme": "tahoe", "look": "dark", "accent": "#0A84FF", "list": "names",
             "hideDock": true, "hideMenuBar": true, "stageManagerOff": true, "fillOnOpen": true,
+            "showHome": true, "showShots": true,
         ])
     }
 
@@ -34,6 +48,20 @@ final class Prefs {
     var hideMenuBar: Bool { get { d.bool(forKey: "hideMenuBar") } set { set(newValue, "hideMenuBar") } }
     var stageManagerOff: Bool { get { d.bool(forKey: "stageManagerOff") } set { set(newValue, "stageManagerOff") } }
     var fillOnOpen: Bool { get { d.bool(forKey: "fillOnOpen") } set { set(newValue, "fillOnOpen") } }
+    /// Whether the Home Assistant button and the two screenshot buttons appear beside Settings in the list.
+    var showHome: Bool { get { d.bool(forKey: "showHome") } set { set(newValue, "showHome") } }
+    var showShots: Bool { get { d.bool(forKey: "showShots") } set { set(newValue, "showShots") } }
+
+    /// Home Assistant address, such as http://homeassistant.local:8123. The access token is in the Keychain, never here.
+    var haURL: String { get { str("haURL") } set { set(newValue, "haURL") } }
+
+    /// Apps kept at the bottom of the list whether or not they are running (at most `maxPinned`).
+    static let maxPinned = 5
+    var pinned: [PinnedApp] {
+        get { (d.array(forKey: "pinned") as? [[String: String]] ?? []).compactMap(PinnedApp.init) }
+        set { set(newValue.map(\.dictionary), "pinned") }
+    }
+
     /// Apps that are never resized (bundle ids). No screen for this yet; edit with `defaults write`.
     var excluded: [String] { d.stringArray(forKey: "excluded") ?? [] }
 
