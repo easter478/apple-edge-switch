@@ -4,7 +4,7 @@
 
 A macOS app switcher for a user coming from Windows who finds Stage Manager and the Dock in the way. Every app fills the screen with no extra click. Moving the cursor to the left screen edge slides out a list of open apps; a click jumps to one, a right-click puts two apps side by side 50/50. The Dock and menu bar stay hidden.
 
-Status on 2026-11-12: **built and installed.** The app is `~/Applications/Edge Switch.app` (bundle id `local.easter.edgeswitch`, version 1.1.0). It has no Dock icon and no menu bar icon; its settings open from the gear at the bottom of the list, or by opening the app again while it runs.
+Status on 2026-11-12: **built and installed.** The app is `~/Applications/Edge Switch.app` (bundle id `local.easter.edgeswitch`, version 1.2.0). It has no Dock icon and no menu bar icon; its settings open from the gear at the bottom of the list, or by opening the app again while it runs.
 
 Target machine: Mac mini (Apple silicon), macOS 27.2, one 2560 x 1440 display at 144 Hz.
 
@@ -97,6 +97,17 @@ Rules the code follows:
 
 ## Change log
 
+### 2026-11-13, build 1.2.0
+
+- The user's Chrome windows did not appear as window rows. Cause: both were in macOS full screen on their own desktops, and the public Accessibility window list only returns windows on the current desktop.
+- `WindowControl.windowList(of:)` now also finds windows elsewhere: it checks `CGWindowListCopyWindowInfo` for sizeable windows the public list missed and, only then, tries the app's first 1000 element ids through the private `_AXUIElementCreateWithRemoteToken` (the method AltTab uses). About 75 ms for Chrome. Window reading moved to its own queue (`readQueue`) so it never delays moving a window.
+- Clicking such a row jumps to that window's desktop (set main, raise, activate). It stays in macOS full screen; it is taken out only for a split.
+- Windows are grouped by profile when the app puts the profile in the title. Chrome's format is `<page> - Google Chrome – <profile>` (hyphen, then en dash); `AppModel.parseTitle` handles hyphen, en dash and em dash on both sides. The profile name is a small heading above its windows.
+- Optional debug lines on stderr with `EDGESWITCH_DEBUG=1` (`dlog` in `Prefs.swift`).
+- GitHub CLI 2.104.0 downloaded from github.com/cli/cli (checksum verified) to `~/.local/bin/gh`. Not signed in yet, nothing pushed.
+- Tested live: both full-screen Chrome windows listed under the heading "Your Chrome"; clicking each row brought that window on screen and made Chrome frontmost; clicking Claude returned. Later repeat runs were unreliable because the user was moving the mouse and had switched theme, which moved the rows away from the scripted click points; the debug log showed the list opening every time the cursor reached the edge.
+- Not tested: two different Chrome profiles (both windows reported the same profile name), splitting with a full-screen Chrome window, the icons-only list.
+
 ### 2026-11-13, build 1.1.0
 
 - The user could not reach a second Chrome window or profile: every window of an app was filled to the same full-screen frame, so the others sat hidden behind the front one. Added a row per window under any app with two or more windows; click to switch, right-click to split, including two windows of the same app side by side.
@@ -122,7 +133,8 @@ Rules the code follows:
 ## Open items
 
 - The installed copy needs the user to switch on Accessibility for Edge Switch once. Until then it switches apps but cannot resize them.
-- GitHub push is waiting for the user to sign in to GitHub on this Mac.
+- GitHub push is waiting for the user to sign in (`~/.local/bin/gh auth login`). Then: create a private repo, wait 5 minutes, push.
+- Asked for on 2026-11-13, not built: pinned apps at the bottom of the list, a Home Assistant button beside Settings that opens light/switch controls in the list, more look options.
 - The mockup (`mockups/edge-switch.html`) does not show window rows or the close buttons.
 - The permission resets on every rebuild (ad hoc signing). A stable self-signed certificate would fix that; not set up.
 - No VoiceOver labels and no keyboard control of the list or the settings sheet (custom-drawn views). Esc, Return and Cmd-W close Settings.

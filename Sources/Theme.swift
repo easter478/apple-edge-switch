@@ -85,6 +85,7 @@ struct Theme {
     static let rowGap: CGFloat = 3
     static let windowRowHeight: CGFloat = 30   // a single window listed under its app
     static let windowIndent: CGFloat = 46
+    static let groupHeaderHeight: CGFloat = 20 // a profile name above that profile's windows
     static let buttonSize: CGFloat = 28        // close and minimize buttons on a row
     static let icon: CGFloat = 36
     static let footer: CGFloat = 44

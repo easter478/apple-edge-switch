@@ -9,7 +9,7 @@ set -e
 cd "${0:A:h}"
 NAME="Edge Switch"
 ID="local.easter.edgeswitch"
-VERSION="1.1.0"
+VERSION="1.2.0"
 OUT="build"
 APP="$OUT/$NAME.app"
 DEST="$HOME/Applications/$NAME.app"

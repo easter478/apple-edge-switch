@@ -6,6 +6,11 @@ import ApplicationServices
 @_silgen_name("_AXUIElementGetWindow")
 private func _AXUIElementGetWindow(_ element: AXUIElement, _ id: UnsafeMutablePointer<CGWindowID>) -> AXError
 
+// Makes an Accessibility element from a raw id. Private call; it is the only way to reach windows that sit on
+// another desktop or in macOS full screen, which the public window list leaves out.
+@_silgen_name("_AXUIElementCreateWithRemoteToken")
+private func _AXUIElementCreateWithRemoteToken(_ data: CFData) -> Unmanaged<AXUIElement>?
+
 /// One window of an app, as shown in the list.
 struct WindowInfo {
     let element: AXUIElement
@@ -13,12 +18,15 @@ struct WindowInfo {
     let title: String
     let minimized: Bool
     let isMain: Bool
+    var fullScreen = false
 }
 
 // Moves and resizes other apps' windows through the macOS Accessibility API.
 // All calls that talk to other apps run on `queue`, never on the main thread.
 enum WindowControl {
     static let queue = DispatchQueue(label: "local.easter.edgeswitch.ax", qos: .userInitiated)
+    /// Reading the window list can take a moment; it has its own queue so it never delays moving a window.
+    static let readQueue = DispatchQueue(label: "local.easter.edgeswitch.ax.read", qos: .userInitiated)
 
     enum Slot { case full, left, right }
 
@@ -110,13 +118,47 @@ enum WindowControl {
         return nil
     }
 
-    /// The normal windows of an app (on the current desktop), oldest first.
-    static func windowList(of pid: pid_t) -> [WindowInfo] {
+    /// Windows of an app that the public list misses: those on other desktops and in macOS full screen.
+    /// Tries the first 1000 element ids of the app and keeps the ones that are normal windows.
+    private static func windowsElsewhere(of pid: pid_t, known: Set<CGWindowID>) -> [AXUIElement] {
+        // Skip the search when the system shows no sizeable window of this app beyond the known ones.
+        let all = (CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]) ?? []
+        let candidates = all.filter { w in
+            guard (w[kCGWindowOwnerPID as String] as? pid_t) == pid, (w[kCGWindowLayer as String] as? Int) == 0,
+                  let b = w[kCGWindowBounds as String] as? [String: CGFloat], (b["Width"] ?? 0) >= 300, (b["Height"] ?? 0) >= 200,
+                  let id = w[kCGWindowNumber as String] as? CGWindowID else { return false }
+            return !known.contains(id)
+        }
+        guard !candidates.isEmpty else { return [] }
+
+        var found: [AXUIElement] = []
+        var seen = known
+        for i: UInt64 in 0..<1000 {
+            var token = Data(count: 20)
+            token.replaceSubrange(0..<4, with: withUnsafeBytes(of: pid) { Data($0) })
+            token.replaceSubrange(4..<8, with: withUnsafeBytes(of: Int32(0)) { Data($0) })
+            token.replaceSubrange(8..<12, with: withUnsafeBytes(of: Int32(0x636f636f)) { Data($0) })
+            token.replaceSubrange(12..<20, with: withUnsafeBytes(of: i) { Data($0) })
+            guard let el = _AXUIElementCreateWithRemoteToken(token as CFData)?.takeRetainedValue() else { continue }
+            AXUIElementSetMessagingTimeout(el, 0.3)
+            guard isStandard(el) else { continue }
+            let id = windowID(el)
+            if id != 0, seen.insert(id).inserted { found.append(el) }
+        }
+        return found
+    }
+
+    /// The normal windows of an app on every desktop, oldest first. A hidden app reports none.
+    static func windowList(of pid: pid_t, everywhere: Bool = true) -> [WindowInfo] {
         let mainID = mainWindow(of: pid).map(windowID) ?? 0
-        let list = windows(of: pid).filter(isStandard).enumerated().map { (i, w) -> (Int, WindowInfo) in
+        var elements = windows(of: pid).filter(isStandard)
+        if everywhere, !(NSRunningApplication(processIdentifier: pid)?.isHidden ?? true) {
+            elements += windowsElsewhere(of: pid, known: Set(elements.map(windowID)))
+        }
+        let list = elements.enumerated().map { (i, w) -> (Int, WindowInfo) in
             let id = windowID(w)
             let info = WindowInfo(element: w, id: id, title: (copy(w, kAXTitleAttribute as String) as? String) ?? "",
-                                  minimized: isMinimized(w), isMain: id != 0 && id == mainID)
+                                  minimized: isMinimized(w), isMain: id != 0 && id == mainID, fullScreen: isFullScreen(w))
             return (i, info)
         }
         // Without window numbers, keep the order the app reports.

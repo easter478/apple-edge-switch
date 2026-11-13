@@ -132,23 +132,33 @@ final class AppModel {
         }
     }
 
-    /// "Page - Google Chrome - Work" becomes "Work: Page"; "Page - Safari" becomes "Page".
-    static func shortTitle(_ title: String, app: String) -> String {
-        for sep in [" - ", " – ", " — "] {
-            if let r = title.range(of: sep + app + sep, options: .backwards) {
-                let page = String(title[..<r.lowerBound]), profile = String(title[r.upperBound...])
-                return profile.isEmpty ? page : "\(profile): \(page)"
+    /// Splits a window title into the page and, for browsers that add it, the profile.
+    /// "Inbox - Google Chrome – Work" gives ("Inbox", "Work"); "Inbox - Safari" gives ("Inbox", nil).
+    static func parseTitle(_ title: String, app: String) -> (page: String, profile: String?) {
+        let seps = [" - ", " – ", " — "]
+        for s1 in seps {
+            guard let r = title.range(of: s1 + app, options: .backwards) else { continue }
+            let page = String(title[..<r.lowerBound]), rest = String(title[r.upperBound...])
+            if rest.isEmpty { return (page.isEmpty ? app : page, nil) }
+            for s2 in seps where rest.hasPrefix(s2) {
+                let profile = String(rest.dropFirst(s2.count))
+                return (page.isEmpty ? app : page, profile.isEmpty ? nil : profile)
             }
-            if title.hasSuffix(sep + app) { return String(title.dropLast((sep + app).count)) }
         }
-        return title.isEmpty ? "Untitled window" : title
+        return (title.isEmpty ? "Untitled window" : title, nil)
+    }
+
+    /// One-line form: "Work: Inbox", or just "Inbox" when there is no profile.
+    static func shortTitle(_ title: String, app: String) -> String {
+        let t = parseTitle(title, app: app)
+        return t.profile.map { "\($0): \(t.page)" } ?? t.page
     }
 
     /// Reads every app's windows, off the main thread.
     func loadWindows() {
         guard WindowControl.trusted else { return }
         let pids = apps.map(\.pid)
-        WindowControl.queue.async {
+        WindowControl.readQueue.async {
             var all: [pid_t: [WindowInfo]] = [:]
             for p in pids { all[p] = WindowControl.windowList(of: p) }
             DispatchQueue.main.async { self.windows = all; self.changed() }
@@ -247,10 +257,17 @@ final class AppModel {
             return
         }
         var slot = WindowControl.Slot.full
-        if let s = split { slot = s.left.pid == pid ? .left : s.right.pid == pid ? .right : .full }
+        var chosen: AXUIElement?
+        if let s = split {
+            if s.left.pid == pid { slot = .left; chosen = s.left.window } else if s.right.pid == pid { slot = .right; chosen = s.right.window }
+        }
         if slot == .full && !Prefs.shared.fillOnOpen { return }
         let forced = slot == .full ? nil : splitArea
-        WindowControl.queue.async { WindowControl.place(pid: pid, slot: slot, areas: areas, on: forced) }
+        WindowControl.queue.async {
+            // The chosen window may be in macOS full screen on another desktop, where the app-wide pass cannot see it.
+            if let w = chosen { WindowControl.place(pid: pid, windows: [(w, slot)], areas: areas, on: forced) }
+            WindowControl.place(pid: pid, slot: slot, areas: areas, on: forced)
+        }
     }
 
     // MARK: actions

@@ -61,6 +61,7 @@ final class PanelController {
             if p.x > s.frame.minX + 3 { armed = true; return }
             // Only a real outer edge counts, not the seam between two displays.
             let outer = !NSScreen.screens.contains { $0 != s && NSMouseInRect(NSPoint(x: s.frame.minX - 4, y: p.y), $0.frame, false) }
+            if p.x <= s.frame.minX + 1 { dlog("edge: armed=\(armed) outer=\(outer) buttons=\(NSEvent.pressedMouseButtons)") }
             if armed, outer, p.x <= s.frame.minX + 1, NSEvent.pressedMouseButtons == 0 { open(on: s) }
             return
         }
@@ -91,6 +92,7 @@ final class PanelController {
 
     func open(on s: NSScreen) {
         guard !isOpen else { return }
+        dlog("open")
         isOpen = true; armed = false; screen = s
         closeWork?.cancel(); closeWork = nil
         AppModel.shared.refresh()
@@ -123,6 +125,7 @@ final class PanelController {
 
     func close() {
         guard isOpen else { return }
+        dlog("close")
         isOpen = false
         sliding = false
         closeWork?.cancel(); closeWork = nil
@@ -166,6 +169,10 @@ final class ListView: NSView {
     private var entries: [AppEntry] = []
     private var wins: [[WindowInfo]] = []      // window rows under each app (empty in the icons-only list)
     private var counts: [Int] = []             // how many windows each app has
+    /// What is drawn under each app, in order: a profile name, or a window (index into `wins`).
+    private enum Sub { case header(String), window(Int) }
+    private var subs: [[Sub]] = []
+    private var pages: [[String]] = []         // the label of each window row
     private var hover: Hit = .none
     private var pressed: Hit = .none
     private var model: AppModel { AppModel.shared }
@@ -180,13 +187,34 @@ final class ListView: NSView {
         entries = model.apps
         counts = entries.map { model.windows[$0.pid]?.count ?? 0 }
         wins = entries.map { iconsOnly ? [] : model.listedWindows(of: $0.pid) }
+        subs = []; pages = []
+        for (i, e) in entries.enumerated() {
+            let parsed = wins[i].map { AppModel.parseTitle($0.title, app: e.name) }
+            // Browsers that name the profile in the window title get their windows grouped under each profile.
+            var order: [String] = []
+            for p in parsed { if let n = p.profile, !order.contains(n) { order.append(n) } }
+            if order.isEmpty {
+                subs.append(wins[i].indices.map { .window($0) })
+                pages.append(parsed.map(\.page))
+            } else {
+                var list: [Sub] = []
+                for name in order {
+                    list.append(.header(name))
+                    list += parsed.indices.filter { parsed[$0].profile == name }.map { .window($0) }
+                }
+                let loose = parsed.indices.filter { parsed[$0].profile == nil }
+                if !loose.isEmpty { list.append(.header("Other windows")); list += loose.map { .window($0) } }
+                subs.append(list)
+                pages.append(parsed.map(\.page))
+            }
+        }
         needsDisplay = true
     }
     func clearPointer() { hover = .none; pressed = .none; needsDisplay = true }
 
     // MARK: layout
 
-    private struct Item { let rect: NSRect; let app: Int; let win: Int? }
+    private struct Item { let rect: NSRect; let app: Int; let win: Int?; var header: String? = nil }
 
     private struct Metrics {
         var header: NSRect?
@@ -200,11 +228,13 @@ final class ListView: NSView {
     private var headerHeight: CGFloat { model.picking ? (iconsOnly ? 30 : 32) + 6 : 0 }
     private var noticeHeight: CGFloat { trusted ? 0 : (iconsOnly ? 52 : 62) + 6 }
 
+    /// Height the list wants. Call after `reload()`.
     func preferredHeight() -> CGFloat {
-        let n = CGFloat(max(model.apps.count, 1))
-        let m = iconsOnly ? 0 : CGFloat(model.apps.reduce(0) { $0 + model.listedWindows(of: $1.pid).count })
-        return Theme.pad + headerHeight + noticeHeight + n * Theme.rowHeight + m * Theme.windowRowHeight
-            + (n + m - 1) * Theme.rowGap + 17 + Theme.footer + Theme.pad
+        let n = CGFloat(max(entries.count, 1))
+        var m: CGFloat = 0, h: CGFloat = 0
+        for list in subs { for s in list { if case .header = s { h += 1 } else { m += 1 } } }
+        return Theme.pad + headerHeight + noticeHeight + n * Theme.rowHeight + m * Theme.windowRowHeight + h * Theme.groupHeaderHeight
+            + (n + m + h - 1) * Theme.rowGap + 17 + Theme.footer + Theme.pad
     }
 
     private func metrics() -> Metrics {
@@ -226,22 +256,31 @@ final class ListView: NSView {
         m.divider = footerTop - 8.5
         m.gear = NSRect(x: pad, y: footerTop, width: w, height: Theme.footer)
 
-        let n = entries.count, k = wins.reduce(0) { $0 + $1.count }
+        let n = entries.count
         guard n > 0 else { return m }
-        var appH = Theme.rowHeight, winH = Theme.windowRowHeight
-        let gaps = CGFloat(n + k - 1) * Theme.rowGap
+        var k = 0, g = 0
+        for list in subs { for s in list { if case .header = s { g += 1 } else { k += 1 } } }
+        var appH = Theme.rowHeight, winH = Theme.windowRowHeight, headH = Theme.groupHeaderHeight
+        let gaps = CGFloat(n + k + g - 1) * Theme.rowGap
         let avail = m.divider - 8 - y - gaps
-        let wanted = CGFloat(n) * appH + CGFloat(k) * winH
+        let wanted = CGFloat(n) * appH + CGFloat(k) * winH + CGFloat(g) * headH
         if wanted > avail, wanted > 0 {     // many apps and windows: rows get shorter rather than fall off the list
             let f = max(0, avail) / wanted
-            appH = max(30, floor(appH * f)); winH = max(20, floor(winH * f))
+            appH = max(30, floor(appH * f)); winH = max(20, floor(winH * f)); headH = max(14, floor(headH * f))
         }
+        let ix = pad + Theme.windowIndent, iw = w - Theme.windowIndent
         for i in 0..<n {
             m.items.append(Item(rect: NSRect(x: pad, y: y, width: w, height: appH), app: i, win: nil))
             y += appH + Theme.rowGap
-            for j in 0..<wins[i].count {
-                m.items.append(Item(rect: NSRect(x: pad + Theme.windowIndent, y: y, width: w - Theme.windowIndent, height: winH), app: i, win: j))
-                y += winH + Theme.rowGap
+            for s in subs[i] {
+                switch s {
+                case .header(let name):
+                    m.items.append(Item(rect: NSRect(x: ix, y: y, width: iw, height: headH), app: i, win: nil, header: name))
+                    y += headH + Theme.rowGap
+                case .window(let j):
+                    m.items.append(Item(rect: NSRect(x: ix, y: y, width: iw, height: winH), app: i, win: j))
+                    y += winH + Theme.rowGap
+                }
             }
         }
         return m
@@ -269,6 +308,7 @@ final class ListView: NSView {
         if let n = m.notice, n.contains(p) { return .notice }
         if m.gear.contains(p) { return .gear }
         for it in m.items where it.rect.insetBy(dx: 0, dy: -Theme.rowGap / 2).contains(p) {
+            if it.header != nil { return .none }
             if let j = it.win {
                 if !model.picking, windowCloseRect(in: it.rect).contains(p) { return .closeWindow(it.app, j) }
                 return .window(it.app, j)
@@ -382,7 +422,7 @@ final class ListView: NSView {
         let side = state == "left" ? "Left" : state == "right" ? "Right" : ""
         let reserve: CGFloat = showClose ? 34 : side.isEmpty ? 10 : 46
         let color = (!state.isEmpty || hovered) && !w.minimized ? t.text : t.textMuted
-        let label = AppModel.shortTitle(w.title, app: e.name) + (w.minimized ? " (in the Dock)" : "")
+        let label = pages[i][j] + (w.minimized ? " (in the Dock)" : "")
         text(label, .systemFont(ofSize: 12.5, weight: state.isEmpty ? .regular : .medium), color,
              in: NSRect(x: r.minX + 10, y: r.midY - 8, width: r.width - 10 - reserve, height: 16))
         if showClose {
@@ -422,7 +462,14 @@ final class ListView: NSView {
         }
 
         for it in m.items {
-            if let j = it.win { drawWindow(it.app, j, in: it.rect) } else { drawApp(it.app, in: it.rect) }
+            if let name = it.header {
+                text(name, .systemFont(ofSize: 11.5, weight: .semibold), t.textMuted,
+                     in: NSRect(x: it.rect.minX + 10, y: it.rect.maxY - 15, width: it.rect.width - 14, height: 15))
+            } else if let j = it.win {
+                drawWindow(it.app, j, in: it.rect)
+            } else {
+                drawApp(it.app, in: it.rect)
+            }
         }
 
         fill(NSRect(x: Theme.pad, y: m.divider, width: bounds.width - 2 * Theme.pad, height: 1), 0, t.hair)

@@ -41,3 +41,9 @@ final class Prefs {
     func original(_ k: String) -> Any? { d.object(forKey: "orig." + k) }
     func rememberOriginal(_ k: String, _ v: Any) { if d.object(forKey: "orig." + k) == nil { d.set(v, forKey: "orig." + k) } }
 }
+
+/// Debug lines on stderr, only when the app is started with EDGESWITCH_DEBUG=1.
+let debugLogging = ProcessInfo.processInfo.environment["EDGESWITCH_DEBUG"] != nil
+func dlog(_ s: @autoclosure () -> String) {
+    if debugLogging { FileHandle.standardError.write((String(format: "%.2f ", Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1000)) + s() + "\n").data(using: .utf8)!) }
+}
