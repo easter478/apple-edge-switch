@@ -71,6 +71,21 @@ final class HomeAssistant {
 
     private func changed() { NotificationCenter.default.post(name: .homeChanged, object: nil) }
 
+    /// Sample lights and switches for `--snapshot panel-home ... demo` (README pictures only).
+    func loadDemo() {
+        entities = [
+            HAEntity(id: "light.living_room", name: "Living room", state: "on"),
+            HAEntity(id: "light.kitchen", name: "Kitchen", state: "on"),
+            HAEntity(id: "light.bedroom", name: "Bedroom", state: "off"),
+            HAEntity(id: "light.desk_lamp", name: "Desk lamp", state: "on"),
+            HAEntity(id: "light.porch", name: "Porch", state: "off"),
+            HAEntity(id: "switch.coffee_machine", name: "Coffee machine", state: "off"),
+            HAEntity(id: "switch.fan", name: "Fan", state: "on"),
+            HAEntity(id: "switch.monitor_backlight", name: "Monitor backlight", state: "on"),
+        ]
+        status = .ok
+    }
+
     /// Forget the cached token (after the user saves a new one).
     func credentialsChanged() { token = nil; entities = []; status = isSetUp ? .loading : .notSetUp; changed() }
 

@@ -39,7 +39,9 @@ app.setActivationPolicy(.accessory)
 
 if let i = args.firstIndex(of: "--snapshot"), args.count > i + 2 {
     // --snapshot panel|panel-pick|panel-locked|settings <file.png> [theme look list]
-    let extra = Array(args[(i + 3)...])
+    // "demo" anywhere after the file name: sample apps, windows, pins and Home Assistant data.
+    let demo = args.contains("demo")
+    let extra = Array(args[(i + 3)...]).filter { $0 != "demo" }
     let d = UserDefaults.standard
     // Snapshots must not change saved settings: use a throwaway layer.
     var layer: [String: Any] = [:]
@@ -47,6 +49,16 @@ if let i = args.firstIndex(of: "--snapshot"), args.count > i + 2 {
     if extra.count > 1 { layer["look"] = extra[1] }
     if extra.count > 2 { layer["list"] = extra[2] }
     if extra.count > 3 { layer["accent"] = extra[3] }
+    if demo {
+        layer["haURL"] = "http://homeassistant.local:8123"
+        layer["showHome"] = true; layer["showShots"] = true
+        layer["pinned"] = [
+            ["id": "com.apple.Safari", "path": "/Applications/Safari.app", "name": "Safari"],
+            ["id": "com.apple.mail", "path": "/System/Applications/Mail.app", "name": "Mail"],
+            ["id": "com.apple.Notes", "path": "/System/Applications/Notes.app", "name": "Notes"],
+            ["id": "com.apple.iCal", "path": "/System/Applications/Calendar.app", "name": "Calendar"],
+        ]
+    }
     d.setVolatileDomain(layer, forName: UserDefaults.argumentDomain)
     switch args[i + 1] {
     case "settings": Snapshot.settings(to: args[i + 2])

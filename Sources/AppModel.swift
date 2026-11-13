@@ -36,6 +36,12 @@ final class AppModel {
 
     private func changed() { NotificationCenter.default.post(name: .modelChanged, object: nil) }
 
+    /// Used only by `loadDemo()` for README pictures.
+    func demoSet(apps: [AppEntry], current: pid_t, windows: [pid_t: [WindowInfo]]) {
+        self.apps = apps; self.current = current; self.windows = windows
+        mru = [current] + apps.map(\.pid).filter { $0 != current }
+    }
+
     // MARK: start
 
     func start() {
@@ -427,5 +433,32 @@ final class AppModel {
             splitScreen(left: Target(pid: cur), right: Target(pid: other), on: screen)
             return true
         }
+    }
+}
+
+// MARK: demo data (README pictures only)
+
+extension AppModel {
+    /// Sample apps and windows for `--snapshot ... demo`, so pictures never show the real screen.
+    func loadDemo() {
+        let dummy = AXUIElementCreateApplication(0)
+        func app(_ pid: pid_t, _ name: String, _ path: String, hidden: Bool = false) -> AppEntry {
+            AppEntry(pid: pid, name: name, icon: NSWorkspace.shared.icon(forFile: path), hidden: hidden, bundleID: nil)
+        }
+        func win(_ id: CGWindowID, _ title: String, main: Bool = false) -> WindowInfo {
+            WindowInfo(element: dummy, id: id, title: title, minimized: false, isMain: main)
+        }
+        demoSet(apps: [
+            app(901, "Finder", "/System/Library/CoreServices/Finder.app"),
+            app(902, "Safari", "/Applications/Safari.app"),
+            app(903, "Google Chrome", "/Applications/Google Chrome.app"),
+            app(904, "Notes", "/System/Applications/Notes.app"),
+            app(905, "Music", "/System/Applications/Music.app", hidden: true),
+            app(906, "Calendar", "/System/Applications/Calendar.app"),
+        ], current: 902, windows: [
+            903: [win(1, "Project plan - Google Chrome – Work", main: true),
+                  win(2, "Team inbox - Google Chrome – Work"),
+                  win(3, "Weekend recipes - Google Chrome – Personal")],
+        ])
     }
 }

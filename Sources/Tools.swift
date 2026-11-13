@@ -70,17 +70,22 @@ enum Snapshot {
     }
 
     static func panel(to path: String, picking: Bool, trusted: Bool, home: Bool = false) {
+        let demo = CommandLine.arguments.contains("demo")
         let t = Theme.current
-        AppModel.shared.start()
-        RunLoop.current.run(until: Date().addingTimeInterval(0.7))   // let the window list load
+        if demo { AppModel.shared.loadDemo() } else {
+            AppModel.shared.start()
+            RunLoop.current.run(until: Date().addingTimeInterval(0.7))   // let the window list load
+        }
         AppModel.shared.picking = picking
         let list = ListView()
         list.theme = t
         list.forceTrusted = trusted
         if home {
             list.mode = .home
-            HomeAssistant.shared.refresh()
-            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
+            if demo { HomeAssistant.shared.loadDemo() } else {
+                HomeAssistant.shared.refresh()
+                RunLoop.current.run(until: Date().addingTimeInterval(1.0))
+            }
         }
         list.reload()
         let w = Prefs.shared.list == "icons" && !home ? Theme.widthIcons : Theme.widthNames

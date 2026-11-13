@@ -3,6 +3,8 @@
 # Needs only the Xcode Command Line Tools (swiftc). No Xcode project.
 #   ./build.sh            build + install + start
 #   ./build.sh --no-run   build + install, do not start it
+#   ./build.sh --no-install   build only (used by release.sh)
+# The app is a universal binary (Apple silicon and Intel).
 # NOTE: the app is signed ad hoc, so every rebuild is a new app to macOS and the
 # Accessibility permission has to be switched on again (System Settings > Privacy & Security).
 set -e
@@ -16,7 +18,11 @@ DEST="$HOME/Applications/$NAME.app"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-swiftc -swift-version 5 -O -target arm64-apple-macos14.0 Sources/*.swift -o "$APP/Contents/MacOS/EdgeSwitch"
+for arch in arm64 x86_64; do
+  swiftc -swift-version 5 -O -target $arch-apple-macos14.0 Sources/*.swift -o "$OUT/EdgeSwitch-$arch"
+done
+lipo -create "$OUT/EdgeSwitch-arm64" "$OUT/EdgeSwitch-x86_64" -output "$APP/Contents/MacOS/EdgeSwitch"
+rm -f "$OUT/EdgeSwitch-arm64" "$OUT/EdgeSwitch-x86_64"
 
 # icon
 ICONSET="$OUT/AppIcon.iconset"
@@ -50,6 +56,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict></plist>
 PLIST
 codesign --force -s - --identifier "$ID" "$APP"
+echo "Built $APP"
+if [[ "$1" == "--no-install" ]]; then exit 0; fi
 
 # install: close the running copy first, then replace it
 osascript -e "tell application id \"$ID\" to quit" 2>/dev/null || true
@@ -61,6 +69,5 @@ cp -R "$APP" "$DEST"
 # The rebuilt app is a new app to macOS. Clear its old Accessibility entry so macOS asks again
 # instead of showing a switch that is on but no longer works.
 tccutil reset Accessibility "$ID" >/dev/null 2>&1 || true
-echo "Built $APP"
 echo "Installed $DEST"
 if [[ "$1" != "--no-run" ]]; then open "$DEST"; echo "Started"; fi
