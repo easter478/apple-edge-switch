@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en" data-theme="tahoe" data-appearance="dark" data-list="names">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edge Switch mockup</title>
+<style>
+/* ---------- Tokens: Tahoe Glass, dark (default) ---------- */
+:root{
+  --accent:#0A84FF;
+  --font:-apple-system,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+
+  --fg:#F5F6F8;
+  --fg-muted:rgba(245,246,248,.76);
+  --glass:rgba(24,26,32,.70);
+  --frost:blur(36px) saturate(170%) brightness(.8);
+  --rim:rgba(255,255,255,.20);
+  --sheen:linear-gradient(rgba(255,255,255,.13),rgba(255,255,255,0) 38%);
+  --hair:rgba(255,255,255,.14);
+  --field:rgba(255,255,255,.07);
+  --hover:rgba(255,255,255,.10);
+  --shadow:0 18px 50px rgba(0,0,0,.42);
+
+  --on-bg:color-mix(in srgb,var(--accent) 36%,transparent);
+  --on-glow:none;
+  --bar:0;
+
+  --p-w:256px;
+  --p-inset:10px;
+  --p-top:10px;
+  --p-bottom:10px;
+  --p-ty:0px;
+  --p-radius:22px;
+  --r-radius:14px;
+
+  --wall:
+    radial-gradient(110% 80% at 12% 8%,#3B7BD9 0%,rgba(59,123,217,0) 55%),
+    radial-gradient(80% 70% at 88% 18%,#1FB5A9 0%,rgba(31,181,169,0) 52%),
+    radial-gradient(120% 100% at 50% 112%,#143A8C 0%,#071230 62%);
+  --mb:0px;
+  --dk:0px;
+}
+:root[data-appearance="light"]{
+  --fg:#14161A;
+  --fg-muted:rgba(20,22,26,.72);
+  --glass:rgba(246,247,250,.72);
+  --frost:blur(36px) saturate(170%) brightness(1.12);
+  --rim:rgba(255,255,255,.75);
+  --sheen:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,0) 38%);
+  --hair:rgba(0,0,0,.11);
+  --field:rgba(0,0,0,.05);
+  --hover:rgba(0,0,0,.07);
+  --shadow:0 18px 50px rgba(20,30,60,.26);
+  --on-bg:color-mix(in srgb,var(--accent) 26%,transparent);
+  --wall:
+    radial-gradient(110% 80% at 12% 8%,#9CC7FF 0%,rgba(156,199,255,0) 55%),
+    radial-gradient(80% 70% at 88% 18%,#8FE6DA 0%,rgba(143,230,218,0) 52%),
+    radial-gradient(120% 100% at 50% 112%,#5E8FE0 0%,#DCE9FB 62%);
+}
+
+/* ---------- Slate Rail: flat rail fixed to the edge ---------- */
+:root[data-theme="slate"]{
+  --glass:rgba(30,33,38,.82);
+  --frost:blur(22px) saturate(140%) brightness(.8);
+  --rim:rgba(255,255,255,.10);
+  --sheen:none;
+  --shadow:6px 0 30px rgba(0,0,0,.35);
+  --on-bg:rgba(255,255,255,.10);
+  --bar:1;
+  --p-inset:0px;
+  --p-top:0px;
+  --p-bottom:0px;
+  --p-radius:0px;
+  --r-radius:6px;
+  --wall:
+    radial-gradient(90% 70% at 80% 10%,#56606E 0%,rgba(86,96,110,0) 60%),
+    linear-gradient(160deg,#39424E 0%,#14181D 78%);
+}
+:root[data-theme="slate"][data-appearance="light"]{
+  --glass:rgba(238,240,243,.84);
+  --frost:blur(22px) saturate(140%) brightness(1.1);
+  --rim:rgba(0,0,0,.10);
+  --shadow:6px 0 30px rgba(30,40,60,.20);
+  --on-bg:rgba(0,0,0,.08);
+  --wall:
+    radial-gradient(90% 70% at 80% 10%,#FFFFFF 0%,rgba(255,255,255,0) 60%),
+    linear-gradient(160deg,#D9DEE5 0%,#9AA4B1 78%);
+}
+
+/* ---------- Aurora Capsule: small glowing capsule ---------- */
+:root[data-theme="aurora"]{
+  --glass:rgba(22,17,40,.68);
+  --frost:blur(44px) saturate(210%) brightness(.8);
+  --rim:rgba(255,255,255,.24);
+  --sheen:linear-gradient(140deg,color-mix(in srgb,var(--accent) 30%,transparent),rgba(255,255,255,0) 46%);
+  --on-bg:linear-gradient(100deg,color-mix(in srgb,var(--accent) 62%,transparent),color-mix(in srgb,var(--accent) 22%,rgba(47,227,196,.38)));
+  --on-glow:0 6px 22px color-mix(in srgb,var(--accent) 45%,transparent);
+  --p-inset:14px;
+  --p-top:50%;
+  --p-bottom:auto;
+  --p-ty:-50%;
+  --p-radius:30px;
+  --r-radius:20px;
+  --wall:
+    radial-gradient(70% 60% at 20% 20%,#7C3AED 0%,rgba(124,58,237,0) 60%),
+    radial-gradient(70% 60% at 82% 28%,#12C9A0 0%,rgba(18,201,160,0) 58%),
+    radial-gradient(80% 70% at 55% 100%,#E0458C 0%,rgba(224,69,140,0) 60%),
+    #120B2C;
+}
+:root[data-theme="aurora"][data-appearance="light"]{
+  --glass:rgba(250,246,255,.72);
+  --frost:blur(44px) saturate(210%) brightness(1.12);
+  --rim:rgba(255,255,255,.8);
+  --on-bg:linear-gradient(100deg,color-mix(in srgb,var(--accent) 34%,transparent),color-mix(in srgb,var(--accent) 12%,rgba(47,227,196,.30)));
+  --on-glow:0 6px 22px color-mix(in srgb,var(--accent) 30%,transparent);
+  --wall:
+    radial-gradient(70% 60% at 20% 20%,#C9A7FF 0%,rgba(201,167,255,0) 60%),
+    radial-gradient(70% 60% at 82% 28%,#9BEFD9 0%,rgba(155,239,217,0) 58%),
+    radial-gradient(80% 70% at 55% 100%,#FFB3D2 0%,rgba(255,179,210,0) 60%),
+    #F3ECFF;
+}
+:root[data-list="icons"]{--p-w:72px}
+body.show-menubar{--mb:28px}
+body.show-dock{--dk:86px}
+
+/* ---------- Base ---------- */
+:root{color-scheme:dark}
+:root[data-appearance="light"]{color-scheme:light}
+.sheet,.rows{scrollbar-width:thin;scrollbar-color:var(--hair) transparent}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:var(--font);font-size:14px;line-height:1.4;color:var(--fg);background:#05070c;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible+.opt-body,.sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+
+/* ---------- The pretend screen ---------- */
+.screen{position:fixed;inset:0;background:var(--wall)}
+.stage{position:absolute;top:var(--mb);right:0;bottom:var(--dk);left:0}
+.empty{position:absolute;inset:0;display:none;place-content:center;text-align:center;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.45)}
+:root[data-appearance="light"] .empty{color:#14161A;text-shadow:0 1px 12px rgba(255,255,255,.6)}
+.stage.is-empty .empty{display:grid}
+.empty b{font-size:22px;font-weight:600}
+.empty span{font-size:15px;opacity:.86}
+
+.menubar{position:absolute;top:0;left:0;right:0;height:28px;display:none;align-items:center;gap:18px;padding:0 14px;font-size:13px;color:#fff;background:rgba(18,20,26,.46);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%)}
+.menubar b{font-weight:600}
+.menubar .sp{flex:1}
+body.show-menubar .menubar{display:flex}
+.dock{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:none;gap:10px;padding:9px 12px;border-radius:24px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%)}
+.dock svg{width:50px;height:50px;display:block}
+body.show-dock .dock{display:flex}
+
+/* ---------- App windows ---------- */
+.win{position:absolute;top:0;bottom:0;left:0;width:100%;display:none;flex-direction:column;overflow:hidden;border-radius:10px;container-type:inline-size;box-shadow:0 0 0 .5px rgba(0,0,0,.45)}
+.win.full{display:flex}
+.win.left{display:flex;width:calc(50% - 1px)}
+.win.right{display:flex;left:calc(50% + 1px);width:calc(50% - 1px)}
+.win.enter{animation:winIn 150ms ease-out}
+@keyframes winIn{from{opacity:.35;transform:scale(.994)}to{opacity:1;transform:none}}
+.tb{flex:none;height:46px;display:flex;align-items:center;gap:14px;padding:0 16px}
+.lights{display:flex;gap:8px}
+.lights i{width:12px;height:12px;border-radius:50%;background:#FF5F57}
+.lights i:nth-child(2){background:#FEBC2E}
+.lights i:nth-child(3){background:#28C840}
+.tb-title{font-weight:600;font-size:13px}
+.body{flex:1;min-height:0;overflow:hidden}
+
+/* Safari */
+.safari{background:#fff;color:#1B1D21}
+.safari .tb{background:#EFEFF2;border-bottom:1px solid #DCDCE1}
+.tabs{display:flex;gap:6px}
+.tab{padding:6px 14px;border-radius:8px;font-size:12.5px;color:#55585F}
+.tab.on{background:#fff;color:#1B1D21;box-shadow:0 0 0 .5px rgba(0,0,0,.12)}
+.url{flex:1;max-width:560px;margin:0 auto;padding:6px 14px;border-radius:9px;background:#E2E2E7;font-size:13px;text-align:center;color:#3A3D44}
+.page{padding:30px clamp(20px,4cqw,56px);height:100%;overflow:hidden}
+.col-head{display:flex;align-items:center;gap:18px;margin-bottom:22px}
+.col-ava{width:76px;height:76px;border-radius:18px;background:linear-gradient(135deg,#1F2A56,#5B7CFA 60%,#9BE7FF)}
+.col-head h2{margin:0;font-size:26px;letter-spacing:-.01em}
+.col-head p{margin:2px 0 0;color:#666A73;font-size:13.5px}
+.col-stats{display:flex;gap:30px;margin-left:auto}
+.col-stats div{font-size:12.5px;color:#666A73}
+.col-stats b{display:block;font-size:17px;color:#1B1D21}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:16px}
+.card{border:1px solid #E6E6EB;border-radius:14px;overflow:hidden}
+.art{aspect-ratio:1/1}
+.card div{padding:10px 12px 12px}
+.card b{display:block;font-size:13.5px}
+.card span{font-size:12.5px;color:#666A73}
+
+/* Offer Bot */
+.offerbot{background:#0E1420;color:#E6EAF2}
+.offerbot .tb{background:#111928;border-bottom:1px solid #1E293B}
+.pill{margin-left:auto;display:flex;align-items:center;gap:7px;padding:4px 11px;border-radius:99px;background:rgba(47,182,90,.16);color:#7EE2A0;font-size:12.5px}
+.pill i{width:7px;height:7px;border-radius:50%;background:#3DDC84}
+.ob{padding:22px clamp(18px,3cqw,34px);display:flex;flex-direction:column;gap:18px;height:100%}
+.ob-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.ob-stats div{padding:14px 16px;border-radius:12px;background:#151E2E;border:1px solid #1F2B40;font-size:12.5px;color:#9AA7BD}
+.ob-stats b{display:block;font-size:24px;color:#F2F5FA;font-weight:600;letter-spacing:-.01em}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:500;color:#8E9BB3;font-size:12.5px;padding:8px 12px;border-bottom:1px solid #1F2B40}
+td{padding:11px 12px;border-bottom:1px solid #18212F;font-variant-numeric:tabular-nums}
+.st{font-size:12.5px;padding:2px 9px;border-radius:99px}
+.st.top{background:rgba(61,220,132,.15);color:#7EE2A0}
+.st.out{background:rgba(255,159,10,.16);color:#FFC46B}
+.st.acc{background:rgba(10,132,255,.18);color:#8CC4FF}
+.log{flex:1;min-height:0;overflow:hidden;padding:12px 14px;border-radius:12px;background:#0A0F18;border:1px solid #18212F;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:#9FB0C9}
+.log em{font-style:normal;color:#5E6C84}
+
+/* Claude */
+.claude{background:#FAF9F5;color:#24231F}
+.claude .tb{background:#F2F0E8;border-bottom:1px solid #E5E2D6}
+.chat{display:flex;height:100%}
+.side{width:230px;flex:none;padding:14px;border-right:1px solid #E5E2D6;background:#F5F3EC;font-size:13.5px}
+.side p{margin:0;padding:8px 10px;border-radius:8px;color:#55524A}
+.side p.on{background:#E9E5D8;color:#24231F}
+.conv{flex:1;padding:28px clamp(18px,5cqw,90px);display:flex;flex-direction:column;gap:16px}
+.msg{max-width:62ch;padding:12px 16px;border-radius:16px;font-size:14.5px;line-height:1.55}
+.msg.me{align-self:flex-end;background:#EAE6D9}
+.box{margin-top:auto;padding:14px 16px;border-radius:16px;border:1px solid #DDD9CB;background:#fff;color:#8A867B}
+
+/* Finder */
+.finder{background:#fff;color:#1B1D21}
+.finder .tb{background:#F3F3F5;border-bottom:1px solid #E0E0E5}
+.fwrap{display:flex;height:100%}
+.fside{width:200px;flex:none;padding:14px 10px;background:#ECECF0;font-size:13.5px}
+.fside small{display:block;padding:4px 10px;color:#7A7D85;font-size:12px}
+.fside p{margin:0;padding:6px 10px;border-radius:7px}
+.fside p.on{background:#D7D8DE}
+.flist{flex:1;padding:8px 0;font-size:13.5px}
+.frow{display:grid;grid-template-columns:1fr 170px 90px;gap:10px;align-items:center;padding:8px 22px}
+.frow:nth-child(odd){background:#F6F6F8}
+.frow span{display:flex;align-items:center;gap:10px}
+.frow i{width:20px;height:16px;border-radius:3px;background:#59A7F5}
+.frow time,.frow u{color:#666A73;text-decoration:none}
+
+/* Mail */
+.mail{background:#fff;color:#1B1D21}
+.mail .tb{background:#F3F3F5;border-bottom:1px solid #E0E0E5}
+.mwrap{display:flex;height:100%}
+.mlist{width:360px;flex:none;border-right:1px solid #E6E6EB}
+.mitem{padding:13px 18px;border-bottom:1px solid #EEEEF2}
+.mitem.on{background:#E3EEFF}
+.mitem b{display:block;font-size:13.5px}
+.mitem span{display:block;font-size:13px}
+.mitem small{color:#666A73;font-size:12.5px}
+.preview{flex:1;padding:30px 40px;font-size:14.5px;line-height:1.6}
+.preview h3{margin:0 0 4px;font-size:20px}
+.preview small{color:#666A73}
+
+/* Terminal */
+.terminal{background:#101216;color:#D7DCE4}
+.terminal .tb{background:#1A1D23;border-bottom:1px solid #262A32}
+.term{padding:16px 20px;font-family:var(--mono);font-size:13.5px;line-height:1.75;white-space:pre-wrap}
+.term b{color:#7EE2A0;font-weight:500}
+.term em{font-style:normal;color:#7C8696}
+
+@container (max-width:900px){
+  .side,.fside,.preview,.col-stats{display:none}
+  .mlist{width:100%;border-right:0}
+  .ob-stats{grid-template-columns:repeat(2,1fr)}
+  .hide-narrow{display:none}
+}
+
+/* ---------- The app list (the real product) ---------- */
+.glass{background:var(--glass);backdrop-filter:var(--frost);-webkit-backdrop-filter:var(--frost);border:1px solid var(--rim);box-shadow:var(--shadow);color:var(--fg)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--sheen);pointer-events:none}
+.panel{position:fixed;z-index:30;top:var(--p-top);bottom:var(--p-bottom);left:var(--p-inset);width:var(--p-w);max-height:calc(100% - 2 * var(--p-inset));display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:var(--p-radius);user-select:none;-webkit-user-select:none;
+  transform:translate(calc(-100% - var(--p-inset) - 6px),var(--p-ty));visibility:hidden;
+  transition:transform 140ms cubic-bezier(.4,0,1,1),visibility 0s linear 140ms}
+:root[data-theme="slate"] .panel{border-width:0 1px 0 0}
+body.panel-open .panel{transform:translate(0,var(--p-ty));visibility:visible;transition:transform 210ms cubic-bezier(.2,.8,.2,1),visibility 0s}
+.p-head{display:none;position:relative;padding:6px 8px 4px;font-size:13px;font-weight:600}
+.panel.picking .p-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.p-head button{border:0;background:var(--field);padding:5px 10px;border-radius:99px;font-size:12.5px;cursor:pointer}
+.p-head button:hover{background:var(--hover)}
+.rows{position:relative;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;overflow:auto;flex:1;min-height:0}
+.row{position:relative;display:flex;align-items:center;border-radius:var(--r-radius)}
+.row:hover{background:var(--hover)}
+.row.is-on{background:var(--on-bg);box-shadow:var(--on-glow)}
+.row.is-on::before{content:"";position:absolute;left:0;top:15px;bottom:15px;width:3px;border-radius:2px;background:var(--accent);opacity:var(--bar)}
+.row-main{flex:1;min-width:0;min-height:52px;display:flex;align-items:center;gap:12px;padding:7px 42px 7px 10px;border:0;background:none;text-align:left;border-radius:inherit;cursor:pointer}
+.ico{flex:none;width:36px;height:36px;border-radius:9px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.ico svg{display:block;width:36px;height:36px}
+.txt{min-width:0;display:flex;flex-direction:column}
+.nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb{font-size:12px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.is-min .ico{opacity:.45;filter:saturate(.35)}
+.row.is-min .nm{opacity:.72}
+.row.is-source .row-main{cursor:default}
+.row-min{position:absolute;right:8px;width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:8px;background:var(--field);opacity:0;cursor:pointer}
+.row-min svg{width:12px;height:12px}
+.row:hover .row-min,.row-min:focus-visible{opacity:1}
+.row-min:hover{background:var(--hover)}
+.row.is-min .row-min,.panel.picking .row-min{display:none}
+.p-foot{position:relative;border-top:1px solid var(--hair);padding-top:8px}
+.gear{width:100%;min-height:44px;display:flex;align-items:center;gap:12px;padding:6px 10px;border:0;background:none;border-radius:var(--r-radius);cursor:pointer;font-size:13.5px;color:var(--fg-muted)}
+.gear:hover{background:var(--hover);color:var(--fg)}
+.gear svg{flex:none;width:20px;height:20px;margin:0 8px}
+:root[data-list="icons"] .txt,:root[data-list="icons"] .row-min,:root[data-list="icons"] .gear span{display:none}
+:root[data-list="icons"] .row-main{padding:8px;justify-content:center}
+:root[data-list="icons"] .gear{justify-content:center;padding:6px 0}
+:root[data-list="icons"] .p-head{flex-direction:column;align-items:stretch;text-align:center;font-size:11.5px;padding:4px 0}
+
+/* Mockup-only helper: shows where the left edge is */
+.edge-hint{position:fixed;z-index:25;left:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;padding:12px 14px 12px 10px;border-radius:0 14px 14px 0;border-left:0;cursor:pointer;font-size:13px;animation:nudge 1.8s ease-in-out 3}
+.edge-hint svg{width:14px;height:14px}
+@keyframes nudge{0%,100%{transform:translate(0,-50%)}50%{transform:translate(8px,-50%)}}
+body.panel-open .edge-hint,body.seen .edge-hint{display:none}
+
+/* ---------- Settings sheet ---------- */
+.scrim{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.22)}
+.scrim[hidden]{display:none}
+.sheet{position:relative;width:min(640px,100%);max-height:min(88vh,860px);overflow:auto;border-radius:calc(var(--p-radius) + 2px);padding:22px 24px 20px}
+:root[data-theme="slate"] .sheet{border-radius:10px}
+.sheet > *{position:relative}
+.sheet-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sheet h2{margin:0;font-size:19px;font-weight:650;letter-spacing:-.01em}
+.sheet h3{margin:20px 0 8px;font-size:13px;font-weight:600;color:var(--fg-muted)}
+.done{border:0;padding:8px 18px;min-height:36px;border-radius:99px;background:var(--field);border:1px solid var(--hair);cursor:pointer;font-weight:600}
+.done:hover{background:var(--hover)}
+.opts{display:grid;gap:8px}
+.opt{position:relative;display:block;cursor:pointer}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.opt-body{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-radius);background:var(--field);border:1px solid var(--hair)}
+.opt-body::before{content:"";flex:none;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1.5px solid var(--fg-muted)}
+.opt input:checked + .opt-body{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.opt input:checked + .opt-body::before{border:5px solid var(--accent);background:#fff}
+.opt b{display:block;font-weight:600}
+.opt span{font-size:13px;color:var(--fg-muted)}
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.theme{padding:8px 8px 10px;border-radius:var(--r-radius);background:var(--field);border:1px solid var(--hair);cursor:pointer;text-align:left}
+.theme[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.tprev{position:relative;height:62px;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.tprev i{position:absolute;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7)}
+.tprev.t1{background:linear-gradient(140deg,#3B7BD9,#0B1E4A)}
+.tprev.t1 i{left:4px;top:4px;bottom:4px;width:26%;border-radius:6px}
+.tprev.t2{background:linear-gradient(160deg,#56606E,#14181D)}
+.tprev.t2 i{left:0;top:0;bottom:0;width:26%;border-width:0 1px 0 0;background:rgba(255,255,255,.34)}
+.tprev.t3{background:linear-gradient(140deg,#7C3AED,#12C9A0 60%,#E0458C)}
+.tprev.t3 i{left:5px;top:13px;bottom:13px;width:24%;border-radius:10px}
+.theme b{display:block;font-size:13.5px}
+.theme span{font-size:12.5px;color:var(--fg-muted)}
+.line{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;min-height:48px;border-radius:var(--r-radius);background:var(--field);border:1px solid var(--hair)}
+.line + .line{margin-top:8px}
+.line small{display:block;font-size:13px;color:var(--fg-muted)}
+.seg{display:flex;padding:3px;border-radius:99px;background:var(--field);border:1px solid var(--hair)}
+.seg button{border:0;background:none;padding:6px 14px;min-height:32px;border-radius:99px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 40%,transparent);font-weight:600}
+.swatches{display:flex;gap:8px}
+.swatches button{width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:var(--c);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.swatches button[aria-pressed="true"]{border-color:var(--fg);box-shadow:inset 0 0 0 2px var(--glass)}
+.sw{position:relative;flex:none;width:46px;height:28px;cursor:pointer}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.sw i{position:absolute;inset:0;border-radius:99px;background:var(--hover);border:1px solid var(--hair);transition:background 160ms}
+.sw i::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform 160ms}
+.sw input:checked + i{background:var(--accent)}
+.sw input:checked + i::after{transform:translateX(18px)}
+
+/* ---------- Mockup guide card ---------- */
+.guide{position:fixed;z-index:20;right:16px;bottom:calc(16px + var(--dk));width:316px;padding:16px 18px;border-radius:18px;font-size:13.5px}
+.guide > *{position:relative}
+.guide h1{margin:0 0 8px;font-size:15px;font-weight:650}
+.guide ol{margin:0;padding-left:20px;display:grid;gap:6px}
+.guide p{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--hair);color:var(--fg-muted);min-height:2.6em}
+.guide-btns{display:flex;gap:8px;margin-top:12px}
+.guide-btns button{flex:1;min-height:34px;border-radius:99px;border:1px solid var(--hair);background:var(--field);cursor:pointer;font-size:13px}
+.guide-btns button:hover{background:var(--hover)}
+.guide[hidden]{display:none}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- Shared icon gradients -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gSafari" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5AC8FA"/><stop offset="1" stop-color="#0A6CFF"/></linearGradient>
+  <linearGradient id="gBot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#13C2B3"/><stop offset="1" stop-color="#123A7A"/></linearGradient>
+  <linearGradient id="gClaude" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E58B6B"/><stop offset="1" stop-color="#C8623F"/></linearGradient>
+  <linearGradient id="gFinder" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7CC4FF"/><stop offset="1" stop-color="#2F86EB"/></linearGradient>
+  <linearGradient id="gMail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#56B6FF"/><stop offset="1" stop-color="#1667E0"/></linearGradient>
+  <linearGradient id="gTerm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A3F48"/><stop offset="1" stop-color="#14161A"/></linearGradient>
+</defs></svg>
+
+<div class="screen">
+  <div class="menubar" aria-hidden="true"><b id="mbApp">Safari</b><span>File</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span><span class="sp"></span><span>Thu 12 Nov&nbsp;&nbsp;9:41</span></div>
+
+  <main class="stage" id="stage">
+    <div class="empty"><b>Nothing on screen</b><span>Pick an app from the left edge.</span></div>
+
+    <section class="win safari" data-app="safari" aria-label="Safari window">
+      <div class="tb"><div class="lights"><i></i><i></i><i></i></div>
+        <div class="tabs hide-narrow"><span class="tab on">Night Herons</span><span class="tab">Gas tracker</span></div>
+        <div class="url">opensea.io/collection/night-herons</div></div>
+      <div class="body"><div class="page">
+        <div class="col-head"><div class="col-ava"></div>
+          <div><h2>Night Herons</h2><p>8,888 items on Ethereum</p></div>
+          <div class="col-stats"><div><b>2.41 ETH</b>Floor price</div><div><b>2.30 WETH</b>Top offer</div><div><b>312 ETH</b>24h volume</div></div>
+        </div>
+        <div class="grid" id="nftGrid"></div>
+      </div></div>
+    </section>
+
+    <section class="win offerbot" data-app="offerbot" aria-label="Offer Bot window">
+      <div class="tb"><div class="lights"><i></i><i></i><i></i></div><span class="tb-title">OpenSea Offer Bot</span><span class="pill"><i></i>Running</span></div>
+      <div class="body"><div class="ob">
+        <div class="ob-stats">
+          <div><b>42</b>Active offers</div><div><b>7</b>Outbid</div><div><b>3</b>Accepted today</div><div><b>4.82</b>WETH balance</div>
+        </div>
+        <table>
+          <thead><tr><th>Collection</th><th>Floor</th><th>My offer</th><th class="hide-narrow">Top offer</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Night Herons</td><td>2.41</td><td>2.30</td><td class="hide-narrow">2.30</td><td><span class="st top">Top offer</span></td></tr>
+            <tr><td>Glass Koi</td><td>0.88</td><td>0.79</td><td class="hide-narrow">0.81</td><td><span class="st out">Outbid</span></td></tr>
+            <tr><td>Paper Lanterns</td><td>0.312</td><td>0.285</td><td class="hide-narrow">0.285</td><td><span class="st top">Top offer</span></td></tr>
+            <tr><td>Rust Garden</td><td>1.07</td><td>0.96</td><td class="hide-narrow">0.96</td><td><span class="st acc">Accepted</span></td></tr>
+            <tr><td>Tide Signals</td><td>0.154</td><td>0.139</td><td class="hide-narrow">0.142</td><td><span class="st out">Outbid</span></td></tr>
+          </tbody>
+        </table>
+        <div class="log"><em>09:41:07</em> Night Herons: offer 2.30 WETH placed, now top offer<br><em>09:41:02</em> Glass Koi: outbid at 0.81, raising to 0.82 (limit 0.84)<br><em>09:40:48</em> Rust Garden #1904: offer 0.96 WETH accepted<br><em>09:40:31</em> Tide Signals: outbid at 0.142, waiting 30 s<br><em>09:40:12</em> Paper Lanterns: offer 0.285 WETH refreshed</div>
+      </div></div>
+    </section>
+
+    <section class="win claude" data-app="claude" aria-label="Claude window">
+      <div class="tb"><div class="lights"><i></i><i></i><i></i></div><span class="tb-title">Claude</span></div>
+      <div class="body"><div class="chat">
+        <div class="side"><p class="on">apple-edge-switch</p><p>apple-opensea-offer-bot</p><p>apple-taskbar-tools</p><p>android-blurio-official</p></div>
+        <div class="conv">
+          <div class="msg me">Stage Manager is driving me crazy. I want every app full screen and a list on the left to jump between them.</div>
+          <div class="msg">Here is a mockup. Move the cursor to the left edge, pick an app, and right-click to split two apps 50/50.</div>
+          <div class="box">Reply to Claude</div>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="win finder" data-app="finder" aria-label="Finder window">
+      <div class="tb"><div class="lights"><i></i><i></i><i></i></div><span class="tb-title">Claude</span></div>
+      <div class="body"><div class="fwrap">
+        <div class="fside"><small>Favorites</small><p>Applications</p><p>Desktop</p><p>Documents</p><p>Downloads</p><p class="on">Claude</p></div>
+        <div class="flist">
+          <div class="frow"><span><i></i>android-blurio-experimental</span><time>10 Nov 2026, 18:22</time><u>Folder</u></div>
+          <div class="frow"><span><i></i>android-blurio-official</span><time>10 Nov 2026, 18:20</time><u>Folder</u></div>
+          <div class="frow"><span><i></i>apple-edge-switch</span><time>Today, 09:38</time><u>Folder</u></div>
+          <div class="frow"><span><i></i>apple-opensea-offer-bot</span><time>11 Nov 2026, 21:05</time><u>Folder</u></div>
+          <div class="frow"><span><i></i>apple-taskbar-tools</span><time>Today, 08:51</time><u>Folder</u></div>
+          <div class="frow"><span><i></i>toolchain</span><time>9 Nov 2026, 12:14</time><u>Folder</u></div>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="win mail" data-app="mail" aria-label="Mail window">
+      <div class="tb"><div class="lights"><i></i><i></i><i></i></div><span class="tb-title">Inbox</span></div>
+      <div class="body"><div class="mwrap">
+        <div class="mlist">
+          <div class="mitem on"><b>OpenSea</b><span>Your offer was accepted</span><small>Rust Garden #1904 for 0.96 WETH</small></div>
+          <div class="mitem"><b>Apple</b><span>Your receipt from Apple</span><small>iCloud+ 200 GB, monthly</small></div>
+          <div class="mitem"><b>Proxmox Backup</b><span>Backup finished: 6 of 6 OK</span><small>Nightly job ran in 14 minutes</small></div>
+          <div class="mitem"><b>GitHub</b><span>Sign-in from a new device</span><small>Mac mini, Safari</small></div>
+        </div>
+        <div class="preview"><h3>Your offer was accepted</h3><small>OpenSea, today at 09:40</small>
+          <p>Your offer of 0.96 WETH on Rust Garden #1904 was accepted by the owner. The item is now in your wallet.</p></div>
+      </div></div>
+    </section>
+
+    <section class="win terminal" data-app="terminal" aria-label="Terminal window">
+      <div class="tb"><div class="lights"><i></i><i></i><i></i></div><span class="tb-title">zsh</span></div>
+      <div class="body"><div class="term"><b>easter@mac-mini</b> ~/Claude % ls
+<em>android-blurio-experimental   apple-edge-switch         apple-taskbar-tools
+android-blurio-official       apple-opensea-offer-bot   toolchain</em>
+<b>easter@mac-mini</b> ~/Claude % defaults read com.apple.WindowManager GloballyEnabled
+0
+<b>easter@mac-mini</b> ~/Claude % ▍</div></div>
+    </section>
+  </main>
+
+  <div class="dock" id="dock" aria-hidden="true"></div>
+</div>
+
+<button class="edge-hint glass" id="edgeHint" type="button">
+  <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M9 2 4 7l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  Move the cursor to this edge
+</button>
+
+<nav class="panel glass" id="panel" aria-label="Open apps">
+  <div class="p-head"><span id="pickTitle"></span><button type="button" id="pickCancel">Cancel</button></div>
+  <ul class="rows" id="rows"></ul>
+  <div class="p-foot">
+    <button class="gear" type="button" id="openSettings" title="Settings">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M15.3 4.7l-1.6 1.6M6.3 13.7l-1.6 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span>Settings</span>
+    </button>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet glass" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-top"><h2 id="sheetTitle">Edge Switch settings</h2><button class="done" type="button" id="closeSettings">Done</button></div>
+
+    <h3 id="hSplit">Right-click at the left edge</h3>
+    <div class="opts" role="radiogroup" aria-labelledby="hSplit">
+      <label class="opt"><input type="radio" name="mode" value="row"><div class="opt-body"><div><b>Right-click an app in the list</b><span>That app goes on the right half, beside the app you are using.</span></div></div></label>
+      <label class="opt"><input type="radio" name="mode" value="pick"><div class="opt-body"><div><b>Right-click, then pick</b><span>Right-click anywhere on the list, then choose the second app.</span></div></div></label>
+      <label class="opt"><input type="radio" name="mode" value="last"><div class="opt-body"><div><b>Split with the last app</b><span>Right-click anywhere on the list. The app you used just before goes on the right half. Right-click again to go back to one app.</span></div></div></label>
+    </div>
+
+    <h3>Look</h3>
+    <div class="themes">
+      <button class="theme" type="button" data-theme="tahoe"><div class="tprev t1"><i></i></div><b>Tahoe Glass</b><span>Floating frosted panel</span></button>
+      <button class="theme" type="button" data-theme="slate"><div class="tprev t2"><i></i></div><b>Slate Rail</b><span>Flat rail on the edge, like the Windows taskbar</span></button>
+      <button class="theme" type="button" data-theme="aurora"><div class="tprev t3"><i></i></div><b>Aurora Capsule</b><span>Small glowing capsule</span></button>
+    </div>
+    <div class="line" style="margin-top:8px"><span>Appearance</span>
+      <div class="seg" id="segAppearance"><button type="button" data-v="dark">Dark</button><button type="button" data-v="light">Light</button></div></div>
+    <div class="line"><span>Accent color</span>
+      <div class="swatches" id="swatches">
+        <button type="button" style="--c:#0A84FF" data-v="#0A84FF" aria-label="Blue"></button>
+        <button type="button" style="--c:#8E5CF6" data-v="#8E5CF6" aria-label="Purple"></button>
+        <button type="button" style="--c:#F2478B" data-v="#F2478B" aria-label="Pink"></button>
+        <button type="button" style="--c:#F08A24" data-v="#F08A24" aria-label="Orange"></button>
+        <button type="button" style="--c:#2FB65A" data-v="#2FB65A" aria-label="Green"></button>
+        <button type="button" style="--c:#8A8F98" data-v="#8A8F98" aria-label="Graphite"></button>
+      </div></div>
+    <div class="line"><span>App list</span>
+      <div class="seg" id="segList"><button type="button" data-v="names">Icons and names</button><button type="button" data-v="icons">Icons only</button></div></div>
+
+    <h3>Screen</h3>
+    <div class="line"><div>Hide the Dock<small>Apps use the full height of the screen.</small></div>
+      <label class="sw"><input type="checkbox" id="swDock" checked aria-label="Hide the Dock"><i></i></label></div>
+    <div class="line"><div>Hide the menu bar<small>It comes back when the cursor touches the top edge.</small></div>
+      <label class="sw"><input type="checkbox" id="swMenu" checked aria-label="Hide the menu bar"><i></i></label></div>
+  </div>
+</div>
+
+<aside class="guide glass" id="guide" aria-label="How to try this mockup">
+  <h1>Try the mockup</h1>
+  <ol>
+    <li>Move the cursor to the left edge of this page.</li>
+    <li>Click an app. It fills the screen.</li>
+    <li id="step3"></li>
+  </ol>
+  <p id="status" aria-live="polite">Safari fills the screen.</p>
+  <div class="guide-btns"><button type="button" id="guideSettings">Open settings</button><button type="button" id="guideHide">Hide this card</button></div>
+</aside>
+
+<script>
+(function(){
+  var APPS=[
+    {id:'safari',name:'Safari',sub:'Night Herons'},
+    {id:'offerbot',name:'Offer Bot',sub:'42 active offers'},
+    {id:'claude',name:'Claude',sub:'apple-edge-switch'},
+    {id:'finder',name:'Finder',sub:'Claude'},
+    {id:'mail',name:'Mail',sub:'Inbox, 3 unread'},
+    {id:'terminal',name:'Terminal',sub:'zsh'}
+  ];
+  var ICONS={
+    safari:'<svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="8.5" fill="url(#gSafari)"/><circle cx="18" cy="18" r="10.5" fill="#fff"/><path d="M23.4 12.6 16.3 16.3l3.4 3.4z" fill="#FF3B30"/><path d="M12.6 23.4l7.1-3.7-3.4-3.4z" fill="#B9C0CA"/></svg>',
+    offerbot:'<svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="8.5" fill="url(#gBot)"/><path d="M9.5 10.5h8.2l8.8 8.8a1.6 1.6 0 0 1 0 2.3l-5.9 5.9a1.6 1.6 0 0 1-2.3 0L9.5 18.7z" fill="#fff"/><circle cx="14.2" cy="15.2" r="1.9" fill="#12707F"/></svg>',
+    claude:'<svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="8.5" fill="url(#gClaude)"/><path d="M18 8.5v19M8.5 18h19M11.3 11.3l13.4 13.4M24.7 11.3 11.3 24.7" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>',
+    finder:'<svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="8.5" fill="url(#gFinder)"/><path d="M8.5 13a2 2 0 0 1 2-2h5l2.2 2.4h7.8a2 2 0 0 1 2 2V24a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2z" fill="#fff"/></svg>',
+    mail:'<svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="8.5" fill="url(#gMail)"/><rect x="8" y="11.5" width="20" height="13" rx="2.2" fill="#fff"/><path d="m9.5 13.5 8.5 6 8.5-6" fill="none" stroke="#2A7FE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    terminal:'<svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="8.5" fill="url(#gTerm)"/><path d="m10.5 13 5.5 5-5.5 5M18.5 23.5h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+  var MINUS='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  var STEP3={
+    row:'Right-click another app in the list. It goes on the right half.',
+    pick:'Right-click anywhere on the list, then choose the second app.',
+    last:'Right-click anywhere on the list. The app you used just before goes on the right half.'
+  };
+
+  var root=document.documentElement, body=document.body;
+  var $=function(id){return document.getElementById(id);};
+  var panel=$('panel'), rows=$('rows'), stage=$('stage'), scrim=$('scrim'), statusEl=$('status');
+  var wins={};
+  document.querySelectorAll('.win').forEach(function(w){wins[w.dataset.app]=w;});
+
+  var S={cur:'safari',mru:APPS.map(function(a){return a.id;}),split:null,min:{},picking:false,open:false,
+         mode:'row',theme:'tahoe',appearance:'dark',accent:'#0A84FF',list:'names',hideDock:true,hideMenu:true};
+  var KEYS=['mode','theme','appearance','accent','list','hideDock','hideMenu'];
+  try{
+    var saved=JSON.parse(localStorage.getItem('edgeSwitchMockup')||'{}');
+    KEYS.forEach(function(k){if(saved[k]!==undefined)S[k]=saved[k];});
+  }catch(e){}
+  function save(){
+    try{var o={};KEYS.forEach(function(k){o[k]=S[k];});localStorage.setItem('edgeSwitchMockup',JSON.stringify(o));}catch(e){}
+  }
+
+  function app(id){return APPS.filter(function(a){return a.id===id;})[0];}
+  function name(id){return app(id).name;}
+  function touch(id){S.mru=[id].concat(S.mru.filter(function(x){return x!==id;}));}
+  function visible(){return S.mru.filter(function(x){return !S.min[x];});}
+  function say(t){statusEl.textContent=t;}
+
+  function activate(id){
+    delete S.min[id];S.split=null;S.picking=false;touch(id);S.cur=id;
+    say(name(id)+' fills the screen.');
+    render();closePanel();
+  }
+  function split(a,b){
+    if(!a||!b||a===b)return;
+    delete S.min[a];delete S.min[b];
+    S.split={left:a,right:b};S.cur=a;touch(b);touch(a);S.picking=false;
+    say(name(a)+' on the left, '+name(b)+' on the right.');
+    render();closePanel();
+  }
+  function minimize(id){
+    S.min[id]=true;
+    if(S.split&&(S.split.left===id||S.split.right===id)){
+      S.cur=S.split.left===id?S.split.right:S.split.left;S.split=null;
+    }else if(S.cur===id){
+      S.cur=visible()[0]||null;
+    }
+    say(name(id)+' is minimized.'+(S.cur?' '+name(S.cur)+' fills the screen.':''));
+    render();
+  }
+  function rightClick(id){
+    if(!S.cur){if(id)activate(id);return;}
+    if(S.mode==='row'){
+      if(id&&id!==S.cur)split(S.cur,id);
+      else say('Right-click a different app to put it beside '+name(S.cur)+'.');
+    }else if(S.mode==='pick'){
+      S.picking=true;render();
+      say('Choose the app to put beside '+name(S.cur)+'.');
+    }else{
+      if(S.split){activate(S.cur);return;}
+      var other=visible().filter(function(x){return x!==S.cur;})[0];
+      if(other)split(S.cur,other);
+      else say('Open a second app first, then right-click to split.');
+    }
+  }
+
+  function render(){
+    // windows
+    var shown=0;
+    APPS.forEach(function(a){
+      var w=wins[a.id], cls='';
+      if(S.split){cls=S.split.left===a.id?'left':S.split.right===a.id?'right':'';}
+      else if(S.cur===a.id){cls='full';}
+      var was=w.dataset.pos||'';
+      if(cls!==was){
+        w.classList.remove('full','left','right','enter');
+        if(cls){w.classList.add(cls);if(!was){void w.offsetWidth;w.classList.add('enter');}}
+        w.dataset.pos=cls;
+      }
+      if(cls)shown++;
+    });
+    stage.classList.toggle('is-empty',shown===0);
+    $('mbApp').textContent=S.cur?name(S.cur):'Finder';
+
+    // list
+    panel.classList.toggle('picking',S.picking);
+    if(S.picking)$('pickTitle').textContent=S.list==='icons'?'Split with':'Split '+name(S.cur)+' with';
+    rows.innerHTML=APPS.map(function(a){
+      var st=S.split?(S.split.left===a.id?'left':S.split.right===a.id?'right':''):(S.cur===a.id?'on':'');
+      var isMin=!!S.min[a.id], src=S.picking&&a.id===S.cur;
+      var sub=isMin?'Minimized':st==='left'?'Left half':st==='right'?'Right half':a.sub;
+      if(S.picking)sub=src?'Stays on the left':'Put beside '+name(S.cur);
+      return '<li class="row'+(st?' is-on':'')+(isMin?' is-min':'')+(src?' is-source':'')+'" data-id="'+a.id+'">'+
+        '<button class="row-main" type="button" title="'+a.name+'"'+(st?' aria-current="true"':'')+'>'+
+          '<span class="ico">'+ICONS[a.id]+'</span>'+
+          '<span class="txt"><span class="nm">'+a.name+'</span><span class="sb">'+sub+'</span></span>'+
+        '</button>'+
+        '<button class="row-min" type="button" aria-label="Minimize '+a.name+'" title="Minimize">'+MINUS+'</button>'+
+      '</li>';
+    }).join('');
+
+    // settings reflect state
+    root.dataset.theme=S.theme;root.dataset.appearance=S.appearance;root.dataset.list=S.list;
+    root.style.setProperty('--accent',S.accent);
+    body.classList.toggle('show-dock',!S.hideDock);
+    body.classList.toggle('show-menubar',!S.hideMenu);
+    document.querySelectorAll('input[name="mode"]').forEach(function(r){r.checked=r.value===S.mode;});
+    document.querySelectorAll('.theme').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.theme===S.theme);});
+    press('#segAppearance button',S.appearance);press('#segList button',S.list);press('#swatches button',S.accent);
+    $('swDock').checked=S.hideDock;$('swMenu').checked=S.hideMenu;
+    $('step3').textContent=STEP3[S.mode];
+  }
+  function press(sel,v){document.querySelectorAll(sel).forEach(function(b){b.setAttribute('aria-pressed',b.dataset.v===v);});}
+
+  // ----- list open / close -----
+  var closeTimer=null;
+  function openPanel(){
+    if(S.open||!scrim.hidden)return;
+    S.open=true;body.classList.add('panel-open','seen');
+  }
+  function closePanel(){
+    clearTimeout(closeTimer);closeTimer=null;
+    if(!S.open)return;
+    S.open=false;body.classList.remove('panel-open');
+    if(S.picking){S.picking=false;render();}
+    if(panel.contains(document.activeElement))document.activeElement.blur();
+  }
+  document.addEventListener('mousemove',function(e){
+    if(!scrim.hidden)return;
+    if(e.clientX<=2){openPanel();return;}
+    if(!S.open)return;
+    var edge=panel.getBoundingClientRect().right+56;
+    if(e.clientX>edge){if(!closeTimer)closeTimer=setTimeout(closePanel,180);}
+    else if(closeTimer){clearTimeout(closeTimer);closeTimer=null;}
+  });
+  $('edgeHint').addEventListener('mouseenter',openPanel);
+  $('edgeHint').addEventListener('click',openPanel);
+  panel.addEventListener('focusin',openPanel);
+
+  rows.addEventListener('click',function(e){
+    var li=e.target.closest('.row');if(!li)return;
+    var id=li.dataset.id;
+    if(e.target.closest('.row-min')){minimize(id);return;}
+    if(S.picking){if(id!==S.cur)split(S.cur,id);return;}
+    activate(id);
+  });
+  panel.addEventListener('contextmenu',function(e){
+    e.preventDefault();
+    var li=e.target.closest('.row');
+    rightClick(li?li.dataset.id:null);
+  });
+  document.addEventListener('contextmenu',function(e){
+    if(e.clientX<=2&&!panel.contains(e.target)){e.preventDefault();openPanel();rightClick(null);}
+  });
+  $('pickCancel').addEventListener('click',function(){S.picking=false;render();say('Split cancelled.');});
+
+  // ----- settings -----
+  function openSettings(){closePanel();scrim.hidden=false;$('closeSettings').focus();}
+  function closeSettings(){scrim.hidden=true;}
+  $('openSettings').addEventListener('click',openSettings);
+  $('guideSettings').addEventListener('click',openSettings);
+  $('closeSettings').addEventListener('click',closeSettings);
+  scrim.addEventListener('mousedown',function(e){if(e.target===scrim)closeSettings();});
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape')return;
+    if(!scrim.hidden)closeSettings();
+    else if(S.picking){S.picking=false;render();}
+    else closePanel();
+  });
+  function set(k,v){S[k]=v;save();render();}
+  document.querySelectorAll('input[name="mode"]').forEach(function(r){r.addEventListener('change',function(){set('mode',r.value);});});
+  document.querySelectorAll('.theme').forEach(function(b){b.addEventListener('click',function(){set('theme',b.dataset.theme);});});
+  document.querySelectorAll('#segAppearance button').forEach(function(b){b.addEventListener('click',function(){set('appearance',b.dataset.v);});});
+  document.querySelectorAll('#segList button').forEach(function(b){b.addEventListener('click',function(){set('list',b.dataset.v);});});
+  document.querySelectorAll('#swatches button').forEach(function(b){b.addEventListener('click',function(){set('accent',b.dataset.v);});});
+  $('swDock').addEventListener('change',function(e){set('hideDock',e.target.checked);});
+  $('swMenu').addEventListener('change',function(e){set('hideMenu',e.target.checked);});
+  $('guideHide').addEventListener('click',function(){$('guide').hidden=true;});
+
+  // ----- sample content -----
+  var hues=[222,262,196,318,168,24,284,206];
+  $('nftGrid').innerHTML=hues.map(function(h,i){
+    var n=[2941,117,6630,4082,905,7712,3318,1560][i], p=[2.41,2.44,2.45,2.49,2.52,2.55,2.6,2.68][i];
+    return '<div class="card"><div class="art" style="background:radial-gradient(circle at 34% 30%,hsl('+h+' 85% 74%),hsl('+(h+40)+' 62% 30%))"></div><div><b>Night Heron #'+n+'</b><span>'+p.toFixed(2)+' ETH</span></div></div>';
+  }).join('');
+  $('dock').innerHTML=APPS.map(function(a){return ICONS[a.id];}).join('');
+
+  render();
+})();
+</script>
+</body>
+</html>
